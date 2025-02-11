@@ -3,90 +3,107 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Consultoria Online para Piscinas</title>
+    <title>Consultoria Profissional para Piscinas | Água Cristalina Garantida</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
-        /* Reset básico */
-        body, h1, h2, p, a {
+        /* Reset e Estilos Base */
+        * {
             margin: 0;
             padding: 0;
-            font-family: Arial, sans-serif;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', sans-serif;
+        }
+
+        :root {
+            --primary: #0077B6;
+            --secondary: #00B4D8;
+            --accent: #FF6B6B;
+            --dark: #2D3142;
+            --light: #F8F9FA;
         }
 
         body {
-            background-color: #f4f4f4;
-            color: #333;
+            background: var(--light);
+            color: var(--dark);
             line-height: 1.6;
         }
 
-        /* Container principal */
-        .container {
-            max-width: 800px;
+        /* Header Hero */
+        .hero {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            padding: 4rem 1rem;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero::after {
+            content: '';
+            position: absolute;
+            bottom: -50px;
+            left: 0;
+            width: 100%;
+            height: 100px;
+            background: url("data:image/svg+xml,%3Csvg viewBox='0 0 1440 320' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath fill='%23f8f9fa' fill-opacity='1' d='M0,160L48,149.3C96,139,192,117,288,128C384,139,480,181,576,176C672,171,768,117,864,101.3C960,85,1056,107,1152,133.3C1248,160,1344,192,1392,208L1440,224L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z'/%3E%3C/svg%3E");
+            background-size: cover;
+        }
+
+        .hero h1 {
+            font-size: 2.8rem;
+            margin-bottom: 1rem;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+        }
+
+        /* Seção de Recursos */
+        .features {
+            padding: 4rem 1rem;
+            display: grid;
+            gap: 2rem;
+            max-width: 1200px;
             margin: 0 auto;
-            padding: 20px;
-            background-color: #fff;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
         }
 
-        /* Cabeçalho */
-        header {
+        .feature-card {
+            background: white;
+            padding: 2rem;
+            border-radius: 15px;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.05);
+            transition: transform 0.3s;
             text-align: center;
-            padding: 20px 0;
-            background-color: #0073e6;
-            color: #fff;
         }
 
-        header h1 {
-            font-size: 2.5em;
-            margin-bottom: 10px;
+        .feature-card:hover {
+            transform: translateY(-5px);
         }
 
-        header p {
-            font-size: 1.2em;
-        }
-
-        /* Seção de introdução */
-        .intro {
-            text-align: center;
-            padding: 20px 0;
-        }
-
-        .intro h2 {
-            font-size: 2em;
-            margin-bottom: 10px;
-            color: #0073e6;
-        }
-
-        .intro p {
-            font-size: 1.1em;
-            margin-bottom: 20px;
-        }
-
-        .intro img {
-            max-width: 100%;
-            height: auto;
-            border-radius: 10px;
-            margin-bottom: 20px;
+        .feature-icon {
+            width: 60px;
+            height: 60px;
+            margin: 0 auto 1rem;
+            background: var(--secondary);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 1.5rem;
         }
 
         /* Seção de Vídeo */
         .video-section {
+            max-width: 800px;
+            margin: 2rem auto;
+            padding: 1rem;
             position: relative;
-            width: 100%;
-            max-width: 315px; /* Largura do vídeo */
-            margin: 0 auto;
-            text-align: center;
-        }
-
-        .video-section h2 {
-            font-size: 2em;
-            margin-bottom: 10px;
-            color: #0073e6;
         }
 
         .video-wrapper {
             position: relative;
-            width: 100%;
-            padding-top: 177.78%; /* Proporção 9:16 (height/width * 100) */
+            padding-bottom: 56.25%;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
         }
 
         .video-wrapper iframe {
@@ -96,202 +113,129 @@
             width: 100%;
             height: 100%;
             border: none;
-            border-radius: 10px;
         }
 
-        /* Cronômetro de Promoção */
-        .countdown-timer {
-            position: absolute;
-            top: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: #ff4444;
+        /* Botões */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 1rem 2rem;
+            border-radius: 50px;
+            font-weight: 600;
+            transition: all 0.3s;
+            text-decoration: none;
+        }
+
+        .btn-primary {
+            background: var(--accent);
             color: white;
-            padding: 10px 20px;
-            border-radius: 25px;
-            font-size: 1.5em;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
-            z-index: 10;
         }
 
-        .countdown-timer span {
-            font-weight: bold;
+        .btn-primary:hover {
+            background: #FF5252;
+            transform: scale(1.05);
         }
 
-        /* Benefícios */
-        .benefits {
-            padding: 20px 0;
+        .btn-whatsapp {
+            background: #25D366;
+            color: white;
         }
 
-        .benefits h2 {
-            font-size: 2em;
-            margin-bottom: 20px;
-            color: #0073e6;
-            text-align: center;
-        }
-
-        .benefits ul {
-            list-style-type: none;
-            padding: 0;
-        }
-
-        .benefits ul li {
-            background-color: #e6f2ff;
-            margin-bottom: 10px;
-            padding: 10px;
-            border-left: 5px solid #0073e6;
-            font-size: 1.1em;
-        }
-
-        /* Promoção */
-        .promo {
-            text-align: center;
-            padding: 20px 0;
-            background-color: #ffdd57;
-            margin: 20px 0;
-            border-radius: 10px;
-        }
-
-        .promo h2 {
-            font-size: 2em;
-            margin-bottom: 10px;
-            color: #333;
-        }
-
-        .promo p {
-            font-size: 1.2em;
-            margin-bottom: 10px;
-        }
-
-        .promo a {
-            display: inline-block;
-            padding: 10px 20px;
-            background-color: #0073e6;
-            color: #fff;
-            text-decoration: none;
-            border-radius: 5px;
-            font-size: 1.1em;
-        }
-
-        /* Botão do WhatsApp */
-        .whatsapp-button {
-            text-align: center;
-            padding: 20px 0;
-        }
-
-        .whatsapp-button a {
-            display: inline-block;
-            padding: 15px 30px;
-            background-color: #25d366; /* Cor do WhatsApp */
-            color: #fff;
-            text-decoration: none;
-            border-radius: 5px;
-            font-size: 1.2em;
-            transition: background-color 0.3s;
-        }
-
-        .whatsapp-button a:hover {
-            background-color: #128c7e; /* Cor do WhatsApp mais escura */
-        }
-
-        /* Rodapé */
+        /* Footer */
         footer {
+            background: var(--dark);
+            color: white;
+            padding: 3rem 1rem;
+            margin-top: 4rem;
             text-align: center;
-            padding: 20px 0;
-            background-color: #0073e6;
-            color: #fff;
-            margin-top: 20px;
         }
 
-        footer p {
-            font-size: 1em;
+        .social-links {
+            display: flex;
+            gap: 1.5rem;
+            justify-content: center;
+            margin: 2rem 0;
+        }
+
+        .social-links a {
+            color: white;
+            font-size: 1.5rem;
+            transition: transform 0.3s;
+        }
+
+        .social-links a:hover {
+            transform: translateY(-3px);
+        }
+
+        /* Responsivo */
+        @media (min-width: 768px) {
+            .features {
+                grid-template-columns: repeat(3, 1fr);
+            }
+
+            .hero h1 {
+                font-size: 3.5rem;
+            }
         }
     </style>
 </head>
 <body>
-    <header>
-        <h1>Sua Piscina Perfeita em Poucos Dias!</h1>
-        <p>Consultoria online com especialista em piscinas.</p>
+    <!-- Header Hero -->
+    <header class="hero">
+        <h1>Sua Piscina Perfeita<br><small>em 48 Horas</small></h1>
+        <p>Consultoria especializada com resultados garantidos</p>
     </header>
 
-    <div class="container">
-        <!-- Seção de Introdução -->
-        <section class="intro">
-            <h2>Resolva Problemas na Sua Piscina sem Sair de Casa!</h2>
-            <p>Cansado de gastar tempo e dinheiro com produtos que não resolvem o problema da sua piscina? A água continua turva, verde ou com algas?</p>
-            <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcS8n4h8Cf8GTDT-CZCD4-EP-VT2SWpx1QbsZUU7oqTFyeUFXLxBM1xExWaq30V69F5jOv8&usqp=CAU" alt="Antes e Depois de uma Piscina">
-        </section>
+    <!-- Seção de Recursos -->
+    <section class="features">
+        <div class="feature-card">
+            <div class="feature-icon"><i class="fas fa-video"></i></div>
+            <h3>Consulta Online</h3>
+            <p>Atendimento personalizado via videochamada</p>
+        </div>
+        
+        <div class="feature-card">
+            <div class="feature-icon"><i class="fas fa-clock"></i></div>
+            <h3>Resultado Rápido</h3>
+            <p>Soluções práticas em até 48 horas</p>
+        </div>
+        
+        <div class="feature-card">
+            <div class="feature-icon"><i class="fas fa-wallet"></i></div>
+            <h3>Economize até 40%</h3>
+            <p>Evite gastos desnecessários com produtos</p>
+        </div>
+    </section>
 
-        <!-- Seção de Vídeo com Cronômetro -->
-        <section class="video-section">
-            <div class="countdown-timer" id="countdown">
-                Promoção termina em: <span id="time">05:00</span>
-            </div>
-            <div class="video-wrapper">
-    <iframe
-        src="https://www.youtube.com/embed/9prXrql5AKw?autoplay=1&modestbranding=1&controls=0&rel=0&showinfo=0"
-        frameborder="0"
-        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-        allowfullscreen>
-    </iframe>
-</div>
+    <!-- Seção de Vídeo -->
+    <section class="video-section">
+        <div class="video-wrapper">
+            <iframe src="https://www.youtube.com/embed/9prXrql5AKw" 
+                    allowfullscreen></iframe>
+        </div>
+    </section>
 
-        </section>
-
-        <!-- Benefícios -->
-        <section class="benefits">
-            <h2>Benefícios da Consultoria Online</h2>
-            <ul>
-                <li>Aprenda a manter sua piscina limpa o ano todo.</li>
-                <li>Economize dinheiro evitando gastos desnecessários.</li>
-                <li>Soluções rápidas para problemas como água verde, turva ou com algas.</li>
-            </ul>
-        </section>
-
-        <!-- Promoção -->
-        <section class="promo">
-            <h2>Promoção Especial!</h2>
-            <p>As 10 primeiras consultorias ganham <strong>20% de desconto</strong>!</p>
-            <a href="#whatsapp-button">Agende Agora</a>
-        </section>
-
-        <!-- Botão do WhatsApp -->
-        <section class="whatsapp-button" id="whatsapp-button">
-            <a href="https://wa.me/5514981722063?text=Olá,%20gostaria%20de%20agendar%20uma%20consultoria%20online%20para%20minha%20piscina!%20Como%20posso%20fazer?" target="_blank">
-                Falar no WhatsApp
+    <!-- CTA -->
+    <section class="features" style="margin-top: -50px">
+        <div class="feature-card" style="grid-column: 1 / -1; background: var(--primary); color: white">
+            <h2 style="margin-bottom: 1rem">Promoção Relâmpago! ⚡</h2>
+            <p>Primeiras 10 consultorias com 20% de desconto</p>
+            <a href="https://wa.me/5514981722063" class="btn btn-primary" style="margin-top: 1.5rem">
+                <i class="fab fa-whatsapp"></i> Agendar Agora
             </a>
-        </section>
-    </div>
+        </div>
+    </section>
 
-    <!-- Rodapé -->
+    <!-- Footer -->
     <footer>
-        <p>&copy; 2025 Tomazela Consultoria Online para Piscinas. Todos os direitos reservados.</p>
+        <div class="social-links">
+            <a href="#"><i class="fab fa-instagram"></i></a>
+            <a href="#"><i class="fab fa-facebook"></i></a>
+            <a href="#"><i class="fab fa-youtube"></i></a>
+        </div>
+        <p>&copy; 2023 Consultoria Piscinas Premium. CNPJ: 40.136.528/0001-07</p>
+        <p style="margin-top: 1rem">Desenvolvido com ❤️ por [Seu Nome]</p>
     </footer>
-
-    <script>
-        // Configura o timer para 5 minutos
-        let timeLeft = 300; // 300 segundos = 5 minutos
-        const timerElement = document.getElementById('time');
-        const countdownElement = document.getElementById('countdown');
-
-        function updateTimer() {
-            const minutes = Math.floor(timeLeft / 60);
-            const seconds = timeLeft % 60;
-            
-            timerElement.innerHTML = 
-                `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
-
-            if(timeLeft <= 0) {
-                clearInterval(timerInterval);
-                countdownElement.innerHTML = "Promoção encerrada! ⏳";
-                countdownElement.style.background = "#666";
-            }
-            
-            timeLeft--;
-        }
-
-        // Inicia o contador
-        const timerInterval = setInterval(updateTimer, 1000);
-    </script>
 </body>
 </html>
