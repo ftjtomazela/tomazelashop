@@ -55,6 +55,22 @@
             text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
         }
 
+        /* Timer */
+        .timer {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 1.5rem;
+            border-radius: 15px;
+            display: inline-block;
+            margin-top: 1.5rem;
+            backdrop-filter: blur(10px);
+        }
+
+        .timer span {
+            font-size: 2rem;
+            font-weight: bold;
+            color: white;
+        }
+
         /* Seção de Recursos */
         .features {
             padding: 4rem 1rem;
@@ -185,6 +201,9 @@
     <header class="hero">
         <h1>Sua Piscina Perfeita<br><small>em 48 Horas</small></h1>
         <p>Consultoria especializada com resultados garantidos</p>
+        <div class="timer" id="timer">
+            Promoção termina em: <span id="time">05:00</span>
+        </div>
     </header>
 
     <!-- Seção de Recursos -->
@@ -211,13 +230,10 @@
     <!-- Seção de Vídeo -->
     <section class="video-section">
         <div class="video-wrapper">
-                <iframe
-                    src="https://www.youtube.com/embed/9prXrql5AKw?autoplay=1&mute=1&modestbranding=1&controls=0&rel=0&showinfo=0"
-                    frameborder="0"
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                    allowfullscreen>
-                </iframe>
-            </div>
+            <iframe src="https://www.youtube.com/embed/9prXrql5AKw?autoplay=1&mute=0&modestbranding=1&controls=0&rel=0&showinfo=0" 
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                    allowfullscreen></iframe>
+        </div>
     </section>
 
     <!-- CTA -->
@@ -241,5 +257,29 @@
         <p>&copy; 2023 Consultoria Piscinas Premium. CNPJ: 40.136.528/0001-07</p>
         <p style="margin-top: 1rem">Desenvolvido com ❤️ por Fernando</p>
     </footer>
+
+    <!-- Script do Timer -->
+    <script>
+        let timeLeft = 300; // 300 segundos = 5 minutos
+        const timerElement = document.getElementById('time');
+
+        function updateTimer() {
+            const minutes = Math.floor(timeLeft / 60);
+            const seconds = timeLeft % 60;
+            
+            timerElement.innerHTML = 
+                `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+
+            if(timeLeft <= 0) {
+                clearInterval(timerInterval);
+                timerElement.innerHTML = "Promoção encerrada! ⏳";
+                document.getElementById('timer').style.background = "#666";
+            }
+            
+            timeLeft--;
+        }
+
+        const timerInterval = setInterval(updateTimer, 1000);
+    </script>
 </body>
 </html>
