@@ -55,6 +55,19 @@
             text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
         }
 
+        /* Logo */
+        .logo {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            width: 150px;
+        }
+
+        .logo img {
+            width: 100%;
+            height: auto;
+        }
+
         /* Timer */
         .timer {
             background: rgba(255, 255, 255, 0.1);
@@ -104,6 +117,27 @@
             justify-content: center;
             color: white;
             font-size: 1.5rem;
+        }
+
+        /* Galeria de Fotos */
+        .gallery {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1rem;
+            max-width: 800px;
+            margin: 2rem auto;
+            padding: 1rem;
+        }
+
+        .gallery img {
+            width: 100%;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            transition: transform 0.3s;
+        }
+
+        .gallery img:hover {
+            transform: scale(1.05);
         }
 
         /* Seção de Vídeo */
@@ -193,10 +227,19 @@
             .hero h1 {
                 font-size: 3.5rem;
             }
+
+            .gallery {
+                grid-template-columns: repeat(4, 1fr);
+            }
         }
     </style>
 </head>
 <body>
+    <!-- Logo -->
+    <div class="logo">
+        <img src="logo.png" alt="Logo da Empresa">
+    </div>
+
     <!-- Header Hero -->
     <header class="hero">
         <h1>Sua Piscina Perfeita<br><small>em 48 Horas</small></h1>
@@ -222,9 +265,17 @@
         
         <div class="feature-card">
             <div class="feature-icon"><i class="fas fa-wallet"></i></div>
-            <h3>Economize até 50%</h3>
+            <h3>Economize até 40%</h3>
             <p>Evite gastos desnecessários com produtos</p>
         </div>
+    </section>
+
+    <!-- Galeria de Fotos -->
+    <section class="gallery">
+        <img src="antes1.jpg" alt="Antes e Depois 1">
+        <img src="depois1.jpg" alt="Antes e Depois 1">
+        <img src="antes2.jpg" alt="Antes e Depois 2">
+        <img src="depois2.jpg" alt="Antes e Depois 2">
     </section>
 
     <!-- Seção de Vídeo -->
