@@ -3,334 +3,112 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Consultoria Profissional para Piscinas | Água Cristalina Garantida</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <title>Azulejista Profissional Intensivo | 3 Dias de Imersão</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700;900&display=swap" rel="stylesheet">
     <style>
-        /* Reset e Estilos Base */
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: 'Segoe UI', sans-serif;
-        }
-
-        :root {
-            --primary: #0077B6;
-            --secondary: #00B4D8;
-            --accent: #FF6B6B;
-            --dark: #2D3142;
-            --light: #F8F9FA;
-        }
-
-        body {
-            background: var(--light);
-            color: var(--dark);
-            line-height: 1.6;
-        }
-
-        /* Header Hero */
-        .hero {
-            background: linear-gradient(135deg, var(--primary), var(--secondary));
-            color: white;
-            padding: 4rem 1rem;
-            text-align: center;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .hero::after {
-            content: '';
-            position: absolute;
-            bottom: -50px;
-            left: 0;
-            width: 100%;
-            height: 100px;
-            background: url("data:image/svg+xml,%3Csvg viewBox='0 0 1440 320' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath fill='%23f8f9fa' fill-opacity='1' d='M0,160L48,149.3C96,139,192,117,288,128C384,139,480,181,576,176C672,171,768,117,864,101.3C960,85,1056,107,1152,133.3C1248,160,1344,192,1392,208L1440,224L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z'/%3E%3C/svg%3E");
-            background-size: cover;
-        }
-
-        .hero h1 {
-            font-size: 2.8rem;
-            margin-bottom: 1rem;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
-        }
-
-        /* Logo */
-        .logo {
-            position: absolute;
-            top: 20px;
-            left: 20px;
-            width: 150px;
-        }
-
-        .logo img {
-            width: 100%;
-            height: auto;
-        }
-
-        /* Timer */
-        .timer {
-            background: rgba(255, 255, 255, 0.1);
-            padding: 1.5rem;
-            border-radius: 15px;
-            display: inline-block;
-            margin-top: 1.5rem;
-            backdrop-filter: blur(10px);
-        }
-
-        .timer span {
-            font-size: 2rem;
-            font-weight: bold;
-            color: white;
-        }
-
-        /* Seção de Recursos */
-        .features {
-            padding: 4rem 1rem;
-            display: grid;
-            gap: 2rem;
-            max-width: 1200px;
-            margin: 0 auto;
-        }
-
-        .feature-card {
-            background: white;
-            padding: 2rem;
-            border-radius: 15px;
-            box-shadow: 0 10px 20px rgba(0,0,0,0.05);
-            transition: transform 0.3s;
-            text-align: center;
-        }
-
-        .feature-card:hover {
-            transform: translateY(-5px);
-        }
-
-        .feature-icon {
-            width: 60px;
-            height: 60px;
-            margin: 0 auto 1rem;
-            background: var(--secondary);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-size: 1.5rem;
-        }
-
-        /* Galeria de Fotos */
-        .gallery {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 1rem;
-            max-width: 800px;
-            margin: 2rem auto;
-            padding: 1rem;
-        }
-
-        .gallery img {
-            width: 100%;
-            border-radius: 15px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-            transition: transform 0.3s;
-        }
-
-        .gallery img:hover {
-            transform: scale(1.05);
-        }
-
-        /* Seção de Vídeo */
-        .video-section {
-            max-width: 800px;
-            margin: 2rem auto;
-            padding: 1rem;
-            position: relative;
-        }
-
-        .video-wrapper {
-            position: relative;
-            padding-bottom: 56.25%;
-            border-radius: 15px;
-            overflow: hidden;
-            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
-        }
-
-        .video-wrapper iframe {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            border: none;
-        }
-
-        /* Botões */
-        .btn {
-            display: inline-flex;
-            align-items: center;
-            gap: 0.5rem;
-            padding: 1rem 2rem;
-            border-radius: 50px;
-            font-weight: 600;
-            transition: all 0.3s;
-            text-decoration: none;
-        }
-
-        .btn-primary {
-            background: var(--accent);
-            color: white;
-        }
-
-        .btn-primary:hover {
-            background: #FF5252;
-            transform: scale(1.05);
-        }
-
-        .btn-whatsapp {
-            background: #25D366;
-            color: white;
-        }
-
-        /* Footer */
-        footer {
-            background: var(--dark);
-            color: white;
-            padding: 3rem 1rem;
-            margin-top: 4rem;
-            text-align: center;
-        }
-
-        .social-links {
-            display: flex;
-            gap: 1.5rem;
-            justify-content: center;
-            margin: 2rem 0;
-        }
-
-        .social-links a {
-            color: white;
-            font-size: 1.5rem;
-            transition: transform 0.3s;
-        }
-
-        .social-links a:hover {
-            transform: translateY(-3px);
-        }
-
-        /* Responsivo */
-        @media (min-width: 768px) {
-            .features {
-                grid-template-columns: repeat(3, 1fr);
-            }
-
-            .hero h1 {
-                font-size: 3.5rem;
-            }
-
-            .gallery {
-                grid-template-columns: repeat(4, 1fr);
-            }
-        }
+        /* O CSS será inserido aqui na seção 2 */
     </style>
 </head>
 <body>
-    <!-- Logo -->
-    <div class="logo">
-        <img src="logo1.png" alt="Logo da Empresa">
-    </div>
 
-    <!-- Header Hero -->
     <header class="hero">
-        <h1>Sua Piscina Perfeita<br><small>em 48 Horas</small></h1>
-        <p>Consultoria especializada com resultados garantidos</p>
-        <div class="timer" id="timer">
-            Promoção termina em: <span id="time">05:00</span>
+        <div class="container">
+            <span class="subtitulo-destaque">DOMINE A ARTE DA INSTALAÇÃO DE REVESTIMENTOS</span>
+            <h1>Azulejista Profissional Intensivo</h1>
+            <h2>Do Básico ao Acabamento de Luxo em Apenas 3 Dias (24h de Prática)</h2>
+            
+            <div class="valor-box">
+                <p class="tag-promo">ÚLTIMAS VAGAS!</p>
+                <p class="valor-antigo">De R$ <s>899,00</s></p>
+                <p class="valor-atual">Por **R$ 400,00**</p>
+                <p class="alunos">Turma Exclusiva: Máx. 10 Alunos</p>
+            </div>
+            
+            <a href="#inscricao" class="btn-cta">QUERO MINHA VAGA E O MEU CERTIFICADO</a>
         </div>
     </header>
 
-    <!-- Seção de Recursos -->
-    <section class="features">
-        <div class="feature-card">
-            <div class="feature-icon"><i class="fas fa-video"></i></div>
-            <h3>Consulta Online</h3>
-            <p>Atendimento personalizado via videochamada</p>
-        </div>
-        
-        <div class="feature-card">
-            <div class="feature-icon"><i class="fas fa-clock"></i></div>
-            <h3>Resultado Rápido</h3>
-            <p>Soluções práticas em até 48 horas</p>
-        </div>
-        
-        <div class="feature-card">
-            <div class="feature-icon"><i class="fas fa-wallet"></i></div>
-            <h3>Economize até 50%</h3>
-            <p>Evite gastos desnecessários com produtos</p>
-        </div>
-    </section>
-
-    <!-- Galeria de Fotos -->
-    <section class="gallery">
-        <img src="antes1.jpg" alt="Antes e Depois 1">
-        <img src="depois1.jpg" alt="Antes e Depois 1">
-        <img src="antes2.jpg" alt="Antes e Depois 2">
-        <img src="depois21.jpg" alt="Antes e Depois 2">
-    </section>
-
-    <!-- Seção de Vídeo -->
-    <section class="video-section">
-        <div class="video-wrapper">
-            <iframe src="https://www.youtube.com/embed/9prXrql5AKw?autoplay=1&mute=0&modestbranding=1&controls=0&rel=0&showinfo=0" 
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
-                    allowfullscreen></iframe>
+    <section class="problema-solucao">
+        <div class="container">
+            <h3>Pare de Perder Serviços e Dinheiro com Erros Amadores!</h3>
+            <div class="grid-solucao">
+                <div class="item-solucao">
+                    <span class="icon">❌</span>
+                    <h4>Problema Comum</h4>
+                    <p>Peças ocas, desníveis e rejuntes manchados que fazem o cliente reclamar e o profissional não ser recomendado.</p>
+                </div>
+                <div class="item-solucao">
+                    <span class="icon">✅</span>
+                    <h4>Nossa Solução</h4>
+                    <p>Aprenda a Dupla Colagem, sistemas de nivelamento e técnicas de limpeza rápida para um serviço impecável e sem retorno.</p>
+                </div>
+                <div class="item-solucao">
+                    <span class="icon">📈</span>
+                    <h4>O Resultado</h4>
+                    <p>Torne-se um profissional de elite, cobre mais caro por serviços de porcelanato e ganhe a confiança do cliente.</p>
+                </div>
+            </div>
         </div>
     </section>
 
-    <!-- CTA -->
-    <section class="features" style="margin-top: -50px">
-        <div class="feature-card" style="grid-column: 1 / -1; background: var(--primary); color: white">
-            <h2 style="margin-bottom: 1rem">Promoção Relâmpago! ⚡</h2>
-            <p>Primeiras 10 consultorias com 20% de desconto</p>
-            <a href="https://wa.me/5514981722063" class="btn btn-primary" style="margin-top: 1.5rem">
-                <i class="fab fa-whatsapp"></i> Agendar Agora
-            </a>
+    <section class="programa" id="programa">
+        <div class="container">
+            <h3>Conteúdo Programático: Do Zero ao Acabamento de Luxo</h3>
+            
+            <div class="bloco-dia">
+                <h4>🛠️ DIA 1: FUNDAMENTOS E O PRIMEIRO ASSENTAMENTO (8 Horas)</h4>
+                <ul>
+                    <li>**Teoria Essencial:** EPIs e Tipos de Argamassas (AC-I, AC-II, AC-III).</li>
+                    <li>**Marcação Perfeita:** Uso do Prumo, Nível e a chave do sucesso: a **Técnica do Ponto de Partida Ideal**.</li>
+                    <li>**Prática:** Assentamento das primeiras peças de Piso (Chão) em padrão reto.</li>
+                </ul>
+            </div>
+
+            <div class="bloco-dia">
+                <h4>🔪 DIA 2: ASSENTAMENTO AVANÇADO E DOMÍNIO DE CORTES (8 Horas)</h4>
+                <ul>
+                    <li>**Parede Sem Erro:** Assentamento de Azulejos em vertical.</li>
+                    <li>**Obrigatório em Porcelanato:** Prática da **Dupla Colagem** e controle de nivelamento com cunhas.</li>
+                    <li>**Cortes Especiais:** Dominando a Riscadeira (cortes em "L") e uso do serra-copo para **contornar caixas e tubulações**.</li>
+                </ul>
+            </div>
+
+            <div class="bloco-dia">
+                <h4>✨ DIA 3: ÁREAS MOLHADAS E ACABAMENTOS FINOS (8 Horas)</h4>
+                <ul>
+                    <li>**O Segredo do Banheiro:** Marcação e assentamento para o **Caimento Perfeito da Água** em direção ao ralo.</li>
+                    <li>**Acabamento de Luxo:** Demonstração e prática de **Meia-Esquadria (corte 45°)** para cantos sem cantoneira.</li>
+                    <li>**Negócios:** Como calcular e **precificar seu metro quadrado** para lucrar mais.</li>
+                </ul>
+            </div>
+
+            <a href="#inscricao" class="btn-cta btn-secundario">TRANSFORME 3 DIAS EM SUCESSO. INSCREVA-SE!</a>
         </div>
     </section>
 
-    <!-- Footer -->
-    <footer>
-        <div class="social-links">
-            <a href="https://www.instagram.com/tomazelapiscinas/"><i class="fab fa-instagram"></i></a>
-            <a href="https://www.facebook.com/TomazelaPiscinas/?locale=pt_BR"><i class="fab fa-facebook"></i></a>
-            <a href="https://www.youtube.com/channel/UCVfuYRwlOZmiNfZXgMF6qBA"><i class="fab fa-youtube"></i></a>
+    <section class="inscricao" id="inscricao">
+        <div class="container">
+            <h3>Sua Carreira Profissional Começa Agora!</h3>
+            <p>Invista em conhecimento que gera retorno imediato. Vagas limitadas a 10 alunos para garantir a máxima qualidade de aprendizado.</p>
+            
+            <div class="info-final">
+                <p><strong>Nível:</strong> Básico ao Intermediário</p>
+                <p><strong>Duração:</strong> 24 Horas de Prática (3 Dias)</p>
+                <p><strong>Valor:</strong> Apenas R$ 400,00</p>
+            </div>
+            
+            <a href="[LINK_DO_SEU_PAGAMENTO_OU_WHATSAPP]" target="_blank" class="btn-cta btn-final">GARANTIR MINHA VAGA AGORA!</a>
+
+            <p class="aviso-vagas">Restam poucas vagas. Não perca a chance de se qualificar.</p>
         </div>
-        <p>&copy; 2025 Consultoria Piscinas Premium. CNPJ: 40.136.528/0001-07</p>
-        <p style="margin-top: 1rem">Desenvolvido com ❤️ por Fernando</p>
+    </section>
+
+    <footer class="rodape">
+        <div class="container">
+            <p>&copy; 2025 [Nome da Sua Empresa/Escola]. Todos os direitos reservados.</p>
+            <p>Fale Conosco: [Seu WhatsApp] | [Seu Email]</p>
+        </div>
     </footer>
 
-    <!-- Script do Timer -->
-    <script>
-        let timeLeft = 300; // 300 segundos = 5 minutos
-        const timerElement = document.getElementById('time');
-
-        function updateTimer() {
-            const minutes = Math.floor(timeLeft / 60);
-            const seconds = timeLeft % 60;
-            
-            timerElement.innerHTML = 
-                `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
-
-            if(timeLeft <= 0) {
-                clearInterval(timerInterval);
-                timerElement.innerHTML = "Promoção encerrada! ⏳";
-                document.getElementById('timer').style.background = "#666";
-            }
-            
-            timeLeft--;
-        }
-
-        const timerInterval = setInterval(updateTimer, 1000);
-    </script>
 </body>
 </html>
