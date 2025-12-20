@@ -4,48 +4,100 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Moto Conchas</title>
+    
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+    
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <link rel="stylesheet" href="style.css">
+
+    <style>
+        /* ESTILO (CSS) */
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
+
+        body { background-color: #f0f0f0; overflow: hidden; }
+
+        #map { height: 100vh; width: 100vw; position: absolute; z-index: 1; }
+
+        /* PAINEL INFERIOR */
+        .bottom-sheet {
+            position: absolute; bottom: 0; width: 100%;
+            background: white; z-index: 100;
+            padding: 20px; border-top-left-radius: 25px; border-top-right-radius: 25px;
+            box-shadow: 0 -10px 25px rgba(0,0,0,0.15);
+            padding-bottom: 30px;
+        }
+
+        .handle { width: 40px; height: 5px; background: #ccc; border-radius: 10px; margin: 0 auto 15px; }
+
+        h3 { margin-bottom: 20px; color: #333; font-weight: 800; text-align: center; }
+
+        .input-group { 
+            display: flex; align-items: center; background: #f4f4f4; 
+            border-radius: 12px; padding: 12px; margin-bottom: 12px; 
+        }
+
+        .dot-origem { width: 10px; height: 10px; background: #3498db; border-radius: 50%; margin-right: 15px; }
+        .dot-destino { width: 10px; height: 10px; background: #e74c3c; border-radius: 50%; margin-right: 15px; }
+
+        input { border: none; background: transparent; width: 100%; font-size: 16px; outline: none; color: #333; }
+
+        .price-estimate { 
+            display: flex; justify-content: space-between; 
+            padding: 15px 5px; font-weight: 600; color: #555; 
+        }
+
+        .btn-confirmar {
+            width: 100%; background: #000; color: white; border: none;
+            padding: 18px; border-radius: 15px; font-size: 18px; font-weight: bold;
+            cursor: pointer;
+        }
+
+        /* LOADER (Aparece ao procurar motorista) */
+        .loader {
+            border: 5px solid #f3f3f3; border-top: 5px solid #000;
+            border-radius: 50%; width: 40px; height: 40px;
+            animation: spin 1s linear infinite; margin: 10px auto;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        .btn-cancelar { 
+            background: none; border: none; color: #e74c3c; 
+            width: 100%; margin-top: 15px; font-weight: 600; cursor: pointer; 
+        }
+    </style>
 </head>
 <body>
 
     <div id="map"></div>
 
-    <div class="menu-top">
-        <div class="profile-icon">👤</div>
-        <div class="logo-text">Moto<b>Conchas</b></div>
-    </div>
-
-    <div class="bottom-sheet" id="sheet">
+    <div class="bottom-sheet">
         <div class="handle"></div>
         
-        <div id="etapa-pedido">
-            <h3>Para onde vamos?</h3>
+        <div id="tela-pedido">
+            <h3>Moto Conchas</h3>
+            
             <div class="input-group">
                 <div class="dot-origem"></div>
-                <input type="text" id="origem" placeholder="Sua localização atual" disabled>
+                <input type="text" value="Minha Localização" disabled>
             </div>
+
             <div class="input-group">
                 <div class="dot-destino"></div>
-                <input type="text" id="destino" placeholder="Digite o destino em Conchas...">
+                <input type="text" id="destinoInput" placeholder="Para onde vamos?">
             </div>
 
             <div class="price-estimate">
-                <span>Preço Estimado:</span>
-                <span id="valor">R$ --,--</span>
+                <span>Valor estimado</span>
+                <span id="precoTxt">R$ 7,00</span>
             </div>
 
-            <button class="btn-confirmar" onclick="confirmarPedido()">
-                Confirmar Moto
-            </button>
+            <button class="btn-confirmar" onclick="enviarPedido()">Confirmar Viagem</button>
         </div>
 
-        <div id="etapa-aguarde" style="display: none; text-align: center;">
+        <div id="tela-aguarde" style="display: none; text-align: center;">
             <div class="loader"></div>
-            <h3>Procurando motorista...</h3>
-            <p>Aguarde, enviando seu pedido para as motos próximas.</p>
-            <button class="btn-cancelar" onclick="cancelarPedido()">Cancelar</button>
+            <h3>Procurando você...</h3>
+            <p style="color: #666;">Avisando os motoristas de Conchas</p>
+            <button class="btn-cancelar" onclick="cancelar()">Cancelar Pedido</button>
         </div>
     </div>
 
@@ -54,6 +106,44 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     
     <script src="firebase-config.js"></script>
-    <script src="passenger-logic.js"></script>
+
+    <script>
+        // Inicializa o mapa focado em Conchas
+        const map = L.map('map').setView([-23.0134, -48.0089], 15);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+        L.marker([-23.0134, -48.0089]).addTo(map).bindPopup("Sua posição").openPopup();
+
+        function enviarPedido() {
+            const dest = document.getElementById('destinoInput').value;
+            if(!dest) return alert("Digite o destino!");
+
+            // Troca de tela
+            document.getElementById('tela-pedido').style.display = 'none';
+            document.getElementById('tela-aguarde').style.display = 'block';
+
+            // Salva no Firebase
+            db.collection("corridas").add({
+                passageiro: "Usuário App",
+                destino: dest,
+                status: "pendente",
+                valor: "R$ 7,00",
+                timestamp: firebase.firestore.FieldValue.serverTimestamp()
+            }).then(doc => {
+                monitorarStatus(doc.id);
+            });
+        }
+
+        function monitorarStatus(id) {
+            db.collection("corridas").doc(id).onSnapshot(doc => {
+                if(doc.data().status === "aceito") {
+                    alert("Motorista aceitou! Ele está chegando.");
+                }
+            });
+        }
+
+        function cancelar() {
+            location.reload(); // Recarrega o app (jeito simples de voltar)
+        }
+    </script>
 </body>
 </html>
