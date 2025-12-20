@@ -1,78 +1,238 @@
-<div class="input-group" id="group-gps" onclick="pedirPermissaoGPS()" style="cursor:pointer; border: 1px solid #3498db;">
-    <div class="dot-origem"></div>
-    <input type="text" id="origemInput" value="Clique para autorizar GPS 📍" disabled>
-</div>
-<script>
-    const PRECO_FIXO = "R$ 7,00";
-    let minhaLocalizacao = null; // Guardará lat e lng do passageiro
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Moto Conchas</title>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 
-    // Inicializa o mapa focado em Conchas por padrão
-    const map = L.map('map').setView([-23.0134, -48.0089], 15);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+    <style>
+        /* CSS DO APP */
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
+        body { background-color: #f0f0f0; overflow: hidden; }
+        
+        #map { height: 100vh; width: 100vw; position: absolute; z-index: 1; }
 
-    // Função para pedir autorização do GPS
-    function pedirPermissaoGPS() {
-        if (!navigator.geolocation) {
-            alert("Seu navegador não suporta GPS.");
-            return;
+        /* Painel que sobe */
+        .bottom-sheet {
+            position: absolute; bottom: 0; width: 100%;
+            background: white; z-index: 100;
+            padding: 20px; border-top-left-radius: 25px; border-top-right-radius: 25px;
+            box-shadow: 0 -10px 25px rgba(0,0,0,0.15);
+            padding-bottom: 30px;
+            transition: bottom 0.3s ease;
         }
 
-        // Mostra o carregamento no input
-        document.getElementById('origemInput').value = "Localizando...";
+        .handle { width: 40px; height: 5px; background: #ccc; border-radius: 10px; margin: 0 auto 15px; }
+        h3 { margin-bottom: 20px; color: #333; font-weight: 800; text-align: center; }
 
-        navigator.geolocation.getCurrentPosition((posicao) => {
-            const lat = posicao.coords.latitude;
-            const lng = posicao.coords.longitude;
-            minhaLocalizacao = { lat, lng };
+        /* Campos de texto */
+        .input-group { 
+            display: flex; align-items: center; background: #f4f4f4; 
+            border-radius: 12px; padding: 12px; margin-bottom: 12px; 
+            border: 1px solid transparent;
+            transition: border-color 0.3s;
+        }
 
-            // Centraliza o mapa na pessoa e coloca o marcador azul
-            map.setView([lat, lng], 17);
+        .dot-origem { width: 10px; height: 10px; background: #3498db; border-radius: 50%; margin-right: 15px; }
+        .dot-destino { width: 10px; height: 10px; background: #e74c3c; border-radius: 50%; margin-right: 15px; }
+
+        input { 
+            border: none; background: transparent; width: 100%; 
+            font-size: 16px; outline: none; color: #333; 
+        }
+
+        /* Feedback visual do GPS */
+        .gps-ativo { border-color: #2ecc71 !important; background-color: #e8f8f5; }
+        .pulsar { animation: pulse-text 1.5s infinite; }
+        @keyframes pulse-text { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
+
+        /* Preview do destino */
+        .preview-destino {
+            font-size: 14px; color: #666; margin-top: -5px; margin-bottom: 15px; padding-left: 5px;
+            font-style: italic; min-height: 20px;
+        }
+
+        /* Preço e Botão */
+        .price-estimate { 
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 15px 5px; font-weight: 600; color: #555; border-top: 1px solid #eee;
+        }
+        .valor-fixo { color: #2ecc71; font-size: 1.4em; font-weight: 800; }
+
+        .btn-confirmar {
+            width: 100%; background: #000; color: white; border: none;
+            padding: 18px; border-radius: 15px; font-size: 18px; font-weight: bold;
+            cursor: pointer;
+        }
+        .btn-confirmar:active { transform: scale(0.98); }
+
+        /* Tela de Aguarde */
+        .loader {
+            border: 5px solid #f3f3f3; border-top: 5px solid #000;
+            border-radius: 50%; width: 40px; height: 40px;
+            animation: spin 1s linear infinite; margin: 10px auto;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        .btn-cancelar { 
+            background: none; border: none; color: #e74c3c; 
+            width: 100%; margin-top: 15px; font-weight: 600; cursor: pointer; 
+        }
+    </style>
+</head>
+<body>
+
+    <div id="map"></div>
+
+    <div class="bottom-sheet">
+        <div class="handle"></div>
+        
+        <div id="tela-pedido">
+            <h3>Moto Conchas</h3>
             
-            // Remove marcador antigo se existir e cria um novo
-            if (window.markerPassageiro) map.removeLayer(window.markerPassageiro);
-            window.markerPassageiro = L.circleMarker([lat, lng], {
-                radius: 10,
-                color: '#fff',
-                fillColor: '#3498db',
-                fillOpacity: 1,
-                weight: 3
-            }).addTo(map).bindPopup("Você está aqui").openPopup();
+            <div class="input-group" id="box-gps" onclick="ativarGPS()" style="cursor: pointer;">
+                <div class="dot-origem"></div>
+                <input type="text" id="origemInput" value="Toque para usar sua localização 📍" readonly style="pointer-events: none;">
+            </div>
 
-            // Atualiza o texto do input
-            document.getElementById('origemInput').value = "Localização confirmada ✅";
-            document.getElementById('group-gps').style.borderColor = "#2ecc71";
+            <div class="input-group">
+                <div class="dot-destino"></div>
+                <input type="text" id="destinoInput" placeholder="Para onde vamos?" oninput="atualizarPreview()">
+            </div>
+            
+            <div class="preview-destino" id="previewTxt"></div>
 
-        }, (erro) => {
-            alert("Erro ao acessar GPS. Por favor, autorize nas configurações.");
-            document.getElementById('origemInput').value = "GPS não autorizado ❌";
-        }, {
-            enableHighAccuracy: true
-        });
-    }
+            <div class="price-estimate">
+                <span>Total (Fixo)</span>
+                <span class="valor-fixo">R$ 7,00</span>
+            </div>
 
-    // Ajuste na função de enviar pedido para incluir o GPS no Firebase
-    function enviarPedido() {
-        const dest = document.getElementById('destinoInput').value;
-        if (!minhaLocalizacao) return alert("Por favor, autorize o GPS primeiro!");
-        if (!dest) return alert("Digite o destino!");
+            <button class="btn-confirmar" onclick="enviarPedido()">Chamar Moto</button>
+        </div>
 
-        document.getElementById('tela-pedido').style.display = 'none';
-        document.getElementById('tela-aguarde').style.display = 'block';
+        <div id="tela-aguarde" style="display: none; text-align: center;">
+            <div class="loader"></div>
+            <h3>Procurando Moto...</h3>
+            <p id="statusInfo" style="color: #666; margin-bottom: 20px;">Avisando motoristas próximos...</p>
+            <button class="btn-cancelar" onclick="cancelar()">Cancelar</button>
+        </div>
+    </div>
 
-        db.collection("corridas").add({
-            passageiro: "Cliente Conchas",
-            origem: {
-                lat: minhaLocalizacao.lat,
-                lng: minhaLocalizacao.lng
-            },
-            destino: dest,
-            status: "pendente",
-            valor: PRECO_FIXO,
-            timestamp: firebase.firestore.FieldValue.serverTimestamp()
-        }).then(doc => {
-            monitorarStatus(doc.id);
-        });
-    }
-    
-    // ... manter as outras funções (monitorarStatus e cancelar) ...
-</script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore-compat.js"></script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="firebase-config.js"></script>
+
+    <script>
+        // --- CONFIGURAÇÃO INICIAL ---
+        const PRECO_FIXO = "R$ 7,00";
+        let localizacaoAtual = null; // Guarda lat/lng do GPS
+        let marcadorUsuario = null;
+
+        // Mapa inicia centralizado em Conchas
+        const map = L.map('map').setView([-23.0134, -48.0089], 15);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+
+        // --- FUNÇÃO DO GPS (Ao clicar no primeiro campo) ---
+        function ativarGPS() {
+            const inputOrigem = document.getElementById('origemInput');
+            const boxGps = document.getElementById('box-gps');
+
+            if (!navigator.geolocation) {
+                alert("Seu celular não tem GPS ou está bloqueado.");
+                return;
+            }
+
+            // Muda texto para indicar carregamento
+            inputOrigem.value = "Localizando você...";
+            inputOrigem.classList.add('pulsar');
+
+            navigator.geolocation.getCurrentPosition(
+                (pos) => {
+                    // SUCESSO
+                    const lat = pos.coords.latitude;
+                    const lng = pos.coords.longitude;
+                    localizacaoAtual = { lat, lng };
+
+                    // 1. Centraliza mapa
+                    map.setView([lat, lng], 17);
+
+                    // 2. Cria ou move a bolinha azul
+                    if (marcadorUsuario) map.removeLayer(marcadorUsuario);
+                    marcadorUsuario = L.circleMarker([lat, lng], {
+                        radius: 8, color: '#fff', fillColor: '#2980b9', fillOpacity: 1, weight: 3
+                    }).addTo(map).bindPopup("Você").openPopup();
+
+                    // 3. Atualiza o visual do input
+                    inputOrigem.classList.remove('pulsar');
+                    inputOrigem.value = "Minha Localização Atual ✅";
+                    boxGps.classList.add('gps-ativo');
+                },
+                (erro) => {
+                    // ERRO
+                    console.error(erro);
+                    inputOrigem.classList.remove('pulsar');
+                    inputOrigem.value = "Erro no GPS (Toque para tentar de novo)";
+                    alert("Não conseguimos pegar sua localização. Verifique se o GPS está ligado.");
+                },
+                { enableHighAccuracy: true } // Pede precisão máxima
+            );
+        }
+
+        // --- ATUALIZA TEXTO ENQUANTO DIGITA ---
+        function atualizarPreview() {
+            const texto = document.getElementById('destinoInput').value;
+            document.getElementById('previewTxt').innerText = texto ? "Indo para: " + texto : "";
+        }
+
+        // --- ENVIAR PEDIDO AO FIREBASE ---
+        function enviarPedido() {
+            const destino = document.getElementById('destinoInput').value;
+
+            if (!localizacaoAtual) {
+                alert("Por favor, toque em 'Toque para usar sua localização' primeiro!");
+                return;
+            }
+            if (!destino) {
+                alert("Digite o destino para onde quer ir.");
+                return;
+            }
+
+            // Troca de tela
+            document.getElementById('tela-pedido').style.display = 'none';
+            document.getElementById('tela-aguarde').style.display = 'block';
+
+            // Salva no banco
+            db.collection("corridas").add({
+                passageiro: "Cliente App", // Futuramente pegaremos o nome real
+                origem: localizacaoAtual,  // Manda as coordenadas
+                destino: destino,
+                valor: PRECO_FIXO,
+                status: "pendente",
+                data: firebase.firestore.FieldValue.serverTimestamp()
+            }).then((docRef) => {
+                monitorarPedido(docRef.id);
+            });
+        }
+
+        // --- ACOMPANHAR STATUS ---
+        function monitorarPedido(id) {
+            db.collection("corridas").doc(id).onSnapshot((doc) => {
+                if (doc.exists && doc.data().status === "aceito") {
+                    document.getElementById('statusInfo').innerText = "Motorista aceitou e está a caminho!";
+                    document.getElementById('statusInfo').style.color = "#27ae60";
+                    document.getElementById('statusInfo').style.fontWeight = "bold";
+                    alert("Seu motorista está chegando!");
+                }
+            });
+        }
+
+        function cancelar() {
+            if(confirm("Cancelar busca?")) location.reload();
+        }
+    </script>
+</body>
+</html>
