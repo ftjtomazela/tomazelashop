@@ -1,33 +1,59 @@
 <!DOCTYPE html>
-<html>
+<html lang="pt-br">
 <head>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Chamar Moto Conchas</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Moto Conchas</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <style>
-        #map { height: 300px; width: 100%; }
-        .btn { background: black; color: white; padding: 20px; width: 100%; border: none; font-size: 1.2em; }
-    </style>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
+
     <div id="map"></div>
-    <input type="text" id="destino" placeholder="Para onde você vai?" style="width:90%; padding:10px; margin:10px 0;">
-    <button class="btn" onclick="pedirMoto()">CHAMAR MOTO</button>
+
+    <div class="menu-top">
+        <div class="profile-icon">👤</div>
+        <div class="logo-text">Moto<b>Conchas</b></div>
+    </div>
+
+    <div class="bottom-sheet" id="sheet">
+        <div class="handle"></div>
+        
+        <div id="etapa-pedido">
+            <h3>Para onde vamos?</h3>
+            <div class="input-group">
+                <div class="dot-origem"></div>
+                <input type="text" id="origem" placeholder="Sua localização atual" disabled>
+            </div>
+            <div class="input-group">
+                <div class="dot-destino"></div>
+                <input type="text" id="destino" placeholder="Digite o destino em Conchas...">
+            </div>
+
+            <div class="price-estimate">
+                <span>Preço Estimado:</span>
+                <span id="valor">R$ --,--</span>
+            </div>
+
+            <button class="btn-confirmar" onclick="confirmarPedido()">
+                Confirmar Moto
+            </button>
+        </div>
+
+        <div id="etapa-aguarde" style="display: none; text-align: center;">
+            <div class="loader"></div>
+            <h3>Procurando motorista...</h3>
+            <p>Aguarde, enviando seu pedido para as motos próximas.</p>
+            <button class="btn-cancelar" onclick="cancelarPedido()">Cancelar</button>
+        </div>
+    </div>
 
     <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore-compat.js"></script>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    
     <script src="firebase-config.js"></script>
-    <script>
-        // Lógica simples de pedido
-        function pedirMoto() {
-            const dest = document.getElementById('destino').value;
-            db.collection("corridas").add({
-                destino: dest,
-                status: "pendente",
-                data: new Date()
-            }).then(() => alert("Pedido enviado!"));
-        }
-    </script>
+    <script src="passenger-logic.js"></script>
 </body>
 </html>
