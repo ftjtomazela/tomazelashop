@@ -3,10 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Moto Conchas</title>
+    <title>Moto Conchas - GPS</title>
     
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    
+    <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.css" />
 
     <style>
         /* CSS DO APP */
@@ -15,72 +17,31 @@
         
         #map { height: 100vh; width: 100vw; position: absolute; z-index: 1; }
 
-        /* Painel que sobe */
+        /* Esconder o quadro branco de instruções de rota (vire a direita, etc) */
+        .leaflet-routing-container { display: none !important; }
+
         .bottom-sheet {
             position: absolute; bottom: 0; width: 100%;
             background: white; z-index: 100;
             padding: 20px; border-top-left-radius: 25px; border-top-right-radius: 25px;
             box-shadow: 0 -10px 25px rgba(0,0,0,0.15);
             padding-bottom: 30px;
-            transition: bottom 0.3s ease;
         }
 
-        .handle { width: 40px; height: 5px; background: #ccc; border-radius: 10px; margin: 0 auto 15px; }
-        h3 { margin-bottom: 20px; color: #333; font-weight: 800; text-align: center; }
-
-        /* Campos de texto */
-        .input-group { 
-            display: flex; align-items: center; background: #f4f4f4; 
-            border-radius: 12px; padding: 12px; margin-bottom: 12px; 
-            border: 1px solid transparent;
-            transition: border-color 0.3s;
-        }
-
+        .input-group { display: flex; align-items: center; background: #f4f4f4; border-radius: 12px; padding: 12px; margin-bottom: 12px; }
         .dot-origem { width: 10px; height: 10px; background: #3498db; border-radius: 50%; margin-right: 15px; }
         .dot-destino { width: 10px; height: 10px; background: #e74c3c; border-radius: 50%; margin-right: 15px; }
-
-        input { 
-            border: none; background: transparent; width: 100%; 
-            font-size: 16px; outline: none; color: #333; 
-        }
-
-        /* Feedback visual do GPS */
-        .gps-ativo { border-color: #2ecc71 !important; background-color: #e8f8f5; }
-        .pulsar { animation: pulse-text 1.5s infinite; }
-        @keyframes pulse-text { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
-
-        /* Preview do destino */
-        .preview-destino {
-            font-size: 14px; color: #666; margin-top: -5px; margin-bottom: 15px; padding-left: 5px;
-            font-style: italic; min-height: 20px;
-        }
-
-        /* Preço e Botão */
-        .price-estimate { 
-            display: flex; justify-content: space-between; align-items: center;
-            padding: 15px 5px; font-weight: 600; color: #555; border-top: 1px solid #eee;
-        }
-        .valor-fixo { color: #2ecc71; font-size: 1.4em; font-weight: 800; }
-
-        .btn-confirmar {
-            width: 100%; background: #000; color: white; border: none;
-            padding: 18px; border-radius: 15px; font-size: 18px; font-weight: bold;
-            cursor: pointer;
-        }
-        .btn-confirmar:active { transform: scale(0.98); }
-
-        /* Tela de Aguarde */
-        .loader {
-            border: 5px solid #f3f3f3; border-top: 5px solid #000;
-            border-radius: 50%; width: 40px; height: 40px;
-            animation: spin 1s linear infinite; margin: 10px auto;
-        }
+        input { border: none; background: transparent; width: 100%; font-size: 16px; outline: none; }
+        
+        .gps-ativo { border: 2px solid #2ecc71; background: #e8f8f5; }
+        
+        .btn-confirmar { width: 100%; background: #000; color: white; border: none; padding: 18px; border-radius: 15px; font-size: 18px; font-weight: bold; cursor: pointer; }
+        
+        /* Loader */
+        .loader { border: 5px solid #f3f3f3; border-top: 5px solid #000; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin: 10px auto; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-
-        .btn-cancelar { 
-            background: none; border: none; color: #e74c3c; 
-            width: 100%; margin-top: 15px; font-weight: 600; cursor: pointer; 
-        }
+        
+        .btn-cancelar { background: none; border: none; color: #e74c3c; width: 100%; margin-top: 15px; font-weight: 600; }
     </style>
 </head>
 <body>
@@ -88,26 +49,22 @@
     <div id="map"></div>
 
     <div class="bottom-sheet">
-        <div class="handle"></div>
-        
         <div id="tela-pedido">
-            <h3>Moto Conchas</h3>
+            <h3 style="text-align: center; margin-bottom: 20px;">Moto Conchas</h3>
             
-            <div class="input-group" id="box-gps" onclick="ativarGPS()" style="cursor: pointer;">
+            <div class="input-group" id="box-gps" onclick="ativarGPS()">
                 <div class="dot-origem"></div>
-                <input type="text" id="origemInput" value="Toque para usar sua localização 📍" readonly style="pointer-events: none;">
+                <input type="text" id="origemInput" value="Toque para usar GPS 📍" readonly>
             </div>
 
             <div class="input-group">
                 <div class="dot-destino"></div>
-                <input type="text" id="destinoInput" placeholder="Para onde vamos?" oninput="atualizarPreview()">
+                <input type="text" id="destinoInput" placeholder="Para onde vamos?">
             </div>
-            
-            <div class="preview-destino" id="previewTxt"></div>
 
-            <div class="price-estimate">
-                <span>Total (Fixo)</span>
-                <span class="valor-fixo">R$ 7,00</span>
+            <div style="display:flex; justify-content:space-between; padding:15px; font-weight:bold; color:#555;">
+                <span>Preço Fixo</span>
+                <span style="color:#2ecc71; font-size:1.2em;">R$ 7,00</span>
             </div>
 
             <button class="btn-confirmar" onclick="enviarPedido()">Chamar Moto</button>
@@ -115,123 +72,114 @@
 
         <div id="tela-aguarde" style="display: none; text-align: center;">
             <div class="loader"></div>
-            <h3>Procurando Moto...</h3>
-            <p id="statusInfo" style="color: #666; margin-bottom: 20px;">Avisando motoristas próximos...</p>
-            <button class="btn-cancelar" onclick="cancelar()">Cancelar</button>
+            <h3 id="tituloStatus">Procurando Moto...</h3>
+            <p id="subStatus">Avisando motoristas...</p>
+            <button class="btn-cancelar" onclick="location.reload()">Cancelar</button>
         </div>
     </div>
 
     <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore-compat.js"></script>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    
+    <script src="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.js"></script>
+
     <script src="firebase-config.js"></script>
 
     <script>
-        // --- CONFIGURAÇÃO INICIAL ---
-        const PRECO_FIXO = "R$ 7,00";
-        let localizacaoAtual = null; // Guarda lat/lng do GPS
-        let marcadorUsuario = null;
-
-        // Mapa inicia centralizado em Conchas
         const map = L.map('map').setView([-23.0134, -48.0089], 15);
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
 
-        // --- FUNÇÃO DO GPS (Ao clicar no primeiro campo) ---
+        let coords = null;
+        let motoMarker = null;
+        let rotaControl = null; // Variável para controlar a linha azul
+
+        // Ícone da Moto
+        const iconMoto = L.icon({
+            iconUrl: 'https://cdn-icons-png.flaticon.com/512/171/171253.png',
+            iconSize: [38, 38],
+            iconAnchor: [19, 19]
+        });
+
         function ativarGPS() {
-            const inputOrigem = document.getElementById('origemInput');
-            const boxGps = document.getElementById('box-gps');
-
-            if (!navigator.geolocation) {
-                alert("Seu celular não tem GPS ou está bloqueado.");
-                return;
-            }
-
-            // Muda texto para indicar carregamento
-            inputOrigem.value = "Localizando você...";
-            inputOrigem.classList.add('pulsar');
-
-            navigator.geolocation.getCurrentPosition(
-                (pos) => {
-                    // SUCESSO
-                    const lat = pos.coords.latitude;
-                    const lng = pos.coords.longitude;
-                    localizacaoAtual = { lat, lng };
-
-                    // 1. Centraliza mapa
-                    map.setView([lat, lng], 17);
-
-                    // 2. Cria ou move a bolinha azul
-                    if (marcadorUsuario) map.removeLayer(marcadorUsuario);
-                    marcadorUsuario = L.circleMarker([lat, lng], {
-                        radius: 8, color: '#fff', fillColor: '#2980b9', fillOpacity: 1, weight: 3
-                    }).addTo(map).bindPopup("Você").openPopup();
-
-                    // 3. Atualiza o visual do input
-                    inputOrigem.classList.remove('pulsar');
-                    inputOrigem.value = "Minha Localização Atual ✅";
-                    boxGps.classList.add('gps-ativo');
-                },
-                (erro) => {
-                    // ERRO
-                    console.error(erro);
-                    inputOrigem.classList.remove('pulsar');
-                    inputOrigem.value = "Erro no GPS (Toque para tentar de novo)";
-                    alert("Não conseguimos pegar sua localização. Verifique se o GPS está ligado.");
-                },
-                { enableHighAccuracy: true } // Pede precisão máxima
-            );
-        }
-
-        // --- ATUALIZA TEXTO ENQUANTO DIGITA ---
-        function atualizarPreview() {
-            const texto = document.getElementById('destinoInput').value;
-            document.getElementById('previewTxt').innerText = texto ? "Indo para: " + texto : "";
-        }
-
-        // --- ENVIAR PEDIDO AO FIREBASE ---
-        function enviarPedido() {
-            const destino = document.getElementById('destinoInput').value;
-
-            if (!localizacaoAtual) {
-                alert("Por favor, toque em 'Toque para usar sua localização' primeiro!");
-                return;
-            }
-            if (!destino) {
-                alert("Digite o destino para onde quer ir.");
-                return;
-            }
-
-            // Troca de tela
-            document.getElementById('tela-pedido').style.display = 'none';
-            document.getElementById('tela-aguarde').style.display = 'block';
-
-            // Salva no banco
-            db.collection("corridas").add({
-                passageiro: "Cliente App", // Futuramente pegaremos o nome real
-                origem: localizacaoAtual,  // Manda as coordenadas
-                destino: destino,
-                valor: PRECO_FIXO,
-                status: "pendente",
-                data: firebase.firestore.FieldValue.serverTimestamp()
-            }).then((docRef) => {
-                monitorarPedido(docRef.id);
+            if(!navigator.geolocation) return alert("Sem GPS");
+            document.getElementById('origemInput').value = "Localizando...";
+            
+            navigator.geolocation.getCurrentPosition(pos => {
+                coords = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+                map.setView([coords.lat, coords.lng], 17);
+                L.circleMarker([coords.lat, coords.lng], {color: 'blue', radius: 8}).addTo(map);
+                document.getElementById('origemInput').value = "Minha Localização ✅";
+                document.getElementById('box-gps').classList.add('gps-ativo');
             });
         }
 
-        // --- ACOMPANHAR STATUS ---
-        function monitorarPedido(id) {
-            db.collection("corridas").doc(id).onSnapshot((doc) => {
-                if (doc.exists && doc.data().status === "aceito") {
-                    document.getElementById('statusInfo').innerText = "Motorista aceitou e está a caminho!";
-                    document.getElementById('statusInfo').style.color = "#27ae60";
-                    document.getElementById('statusInfo').style.fontWeight = "bold";
-                    alert("Seu motorista está chegando!");
+        function enviarPedido() {
+            const dest = document.getElementById('destinoInput').value;
+            if(!coords) return alert("Use o GPS primeiro!");
+            if(!dest) return alert("Digite o destino!");
+
+            document.getElementById('tela-pedido').style.display = 'none';
+            document.getElementById('tela-aguarde').style.display = 'block';
+
+            db.collection("corridas").add({
+                passageiro: "Cliente App",
+                origem: coords,
+                destino: dest,
+                valor: "R$ 7,00",
+                status: "pendente",
+                data: firebase.firestore.FieldValue.serverTimestamp()
+            }).then(doc => acompanharCorrida(doc.id));
+        }
+
+        function acompanharCorrida(id) {
+            db.collection("corridas").doc(id).onSnapshot(doc => {
+                const dados = doc.data();
+                
+                if(dados.status === "aceito") {
+                    document.getElementById('tituloStatus').innerText = "Motorista a caminho!";
+                    document.getElementById('subStatus').innerText = "Veja a rota no mapa";
+                    document.querySelector('.loader').style.display = 'none'; // Some o loader
+
+                    // Verifica se o motorista está enviando localização
+                    if (dados.motoristaLat && dados.motoristaLng) {
+                        const latMoto = dados.motoristaLat;
+                        const lngMoto = dados.motoristaLng;
+
+                        // 1. Atualiza o ícone da moto
+                        if (!motoMarker) {
+                            motoMarker = L.marker([latMoto, lngMoto], {icon: iconMoto}).addTo(map);
+                        } else {
+                            motoMarker.setLatLng([latMoto, lngMoto]);
+                        }
+
+                        // 2. Traça a linha azul (Rota) da Moto até o Passageiro
+                        atualizarRota(latMoto, lngMoto, coords.lat, coords.lng);
+                    }
                 }
             });
         }
 
-        function cancelar() {
-            if(confirm("Cancelar busca?")) location.reload();
+        function atualizarRota(latInicio, lngInicio, latFim, lngFim) {
+            // Se a rota já existe, remove para criar uma nova atualizada
+            if (rotaControl) {
+                map.removeControl(rotaControl);
+            }
+
+            rotaControl = L.Routing.control({
+                waypoints: [
+                    L.latLng(latInicio, lngInicio), // Onde a moto está
+                    L.latLng(latFim, lngFim)        // Onde você está
+                ],
+                lineOptions: {
+                    styles: [{color: 'blue', opacity: 0.7, weight: 5}]
+                },
+                createMarker: function() { return null; }, // Não cria marcadores extras
+                addWaypoints: false,
+                draggableWaypoints: false,
+                fitSelectedRoutes: false,
+                show: false // Esconde o texto de instruções
+            }).addTo(map);
         }
     </script>
 </body>
