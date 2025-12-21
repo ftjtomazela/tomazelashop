@@ -30,19 +30,10 @@
         .gps-ativo { border: 2px solid #2ecc71; background: #e8f8f5; }
         .btn-confirmar { width: 100%; background: #000; color: white; border: none; padding: 18px; border-radius: 15px; font-size: 18px; font-weight: bold; cursor: pointer; }
         
-        /* Loader e Tempo */
         .loader { border: 5px solid #f3f3f3; border-top: 5px solid #000; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin: 10px auto; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         
-        /* Estilo do Tempo Estimado */
-        .tempo-destaque {
-            font-size: 2.5em;
-            font-weight: 800;
-            color: #2ecc71;
-            margin: 10px 0;
-            display: none; /* Escondido até calcular a rota */
-        }
-        
+        .tempo-destaque { font-size: 2.5em; font-weight: 800; color: #2ecc71; margin: 10px 0; display: none; }
         .btn-cancelar { background: none; border: none; color: #e74c3c; width: 100%; margin-top: 15px; font-weight: 600; }
     </style>
 </head>
@@ -65,7 +56,7 @@
             </div>
 
             <div style="display:flex; justify-content:space-between; padding:15px; font-weight:bold; color:#555;">
-                <span>Preço Fixo</span>
+                <span>Preço Fixo (Raio 5km)</span>
                 <span style="color:#2ecc71; font-size:1.2em;">R$ 7,00</span>
             </div>
 
@@ -74,11 +65,8 @@
 
         <div id="tela-aguarde" style="display: none; text-align: center;">
             <div class="loader"></div>
-            
             <h3 id="tituloStatus">Procurando Moto...</h3>
-            
             <div id="tempoChegada" class="tempo-destaque">-- min</div>
-            
             <p id="subStatus">Avisando motoristas...</p>
             <button class="btn-cancelar" onclick="location.reload()">Cancelar</button>
         </div>
@@ -91,8 +79,20 @@
     <script src="firebase-config.js"></script>
 
     <script>
-        const map = L.map('map').setView([-23.0134, -48.0089], 15);
+        // CONFIGURAÇÕES DE ÁREA
+        const CENTRO_CONCHAS = { lat: -23.0134, lng: -48.0089 }; // Centro da cidade
+        const RAIO_MAXIMO_KM = 5; // Raio de 5km
+
+        const map = L.map('map').setView([CENTRO_CONCHAS.lat, CENTRO_CONCHAS.lng], 14);
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+
+        // Desenha o círculo da área de atendimento
+        L.circle([CENTRO_CONCHAS.lat, CENTRO_CONCHAS.lng], {
+            color: 'red',
+            fillColor: '#f03',
+            fillOpacity: 0.1,
+            radius: RAIO_MAXIMO_KM * 1000 // Converte km para metros
+        }).addTo(map);
 
         let coords = null;
         let motoMarker = null;
@@ -109,18 +109,41 @@
             document.getElementById('origemInput').value = "Localizando...";
             
             navigator.geolocation.getCurrentPosition(pos => {
-                coords = { lat: pos.coords.latitude, lng: pos.coords.longitude };
-                map.setView([coords.lat, coords.lng], 17);
-                L.circleMarker([coords.lat, coords.lng], {color: 'blue', radius: 8}).addTo(map);
+                const lat = pos.coords.latitude;
+                const lng = pos.coords.longitude;
+                
+                // Salva coords
+                coords = { lat: lat, lng: lng };
+
+                map.setView([lat, lng], 16);
+                L.circleMarker([lat, lng], {color: 'blue', radius: 8}).addTo(map);
                 document.getElementById('origemInput').value = "Minha Localização ✅";
                 document.getElementById('box-gps').classList.add('gps-ativo');
-            });
+
+                // Verifica na hora se está longe
+                const distancia = calcularDistancia(lat, lng, CENTRO_CONCHAS.lat, CENTRO_CONCHAS.lng);
+                if (distancia > RAIO_MAXIMO_KM) {
+                    alert(`Atenção: Você está a ${distancia.toFixed(1)}km do centro. Não atendemos nesta área (Limite: 5km).`);
+                    document.getElementById('origemInput').style.color = "red";
+                    document.getElementById('origemInput').value = "Fora da Área ❌";
+                }
+
+            }, () => alert("Erro ao pegar localização."));
         }
 
         function enviarPedido() {
             const dest = document.getElementById('destinoInput').value;
             if(!coords) return alert("Use o GPS primeiro!");
             if(!dest) return alert("Digite o destino!");
+
+            // --- BLOQUEIO DE DISTÂNCIA ---
+            const distancia = calcularDistancia(coords.lat, coords.lng, CENTRO_CONCHAS.lat, CENTRO_CONCHAS.lng);
+            
+            if (distancia > RAIO_MAXIMO_KM) {
+                alert(`Você está muito longe! (${distancia.toFixed(1)}km). Nosso raio é de apenas 5km do centro.`);
+                return; // PARA TUDO AQUI
+            }
+            // -----------------------------
 
             document.getElementById('tela-pedido').style.display = 'none';
             document.getElementById('tela-aguarde').style.display = 'block';
@@ -133,6 +156,18 @@
                 status: "pendente",
                 data: firebase.firestore.FieldValue.serverTimestamp()
             }).then(doc => acompanharCorrida(doc.id));
+        }
+
+        // FÓRMULA DE HAVERSINE (Matemática para calcular distância em KM)
+        function calcularDistancia(lat1, lon1, lat2, lon2) {
+            const R = 6371; // Raio da Terra em km
+            const dLat = (lat2 - lat1) * Math.PI / 180;
+            const dLon = (lon2 - lon1) * Math.PI / 180;
+            const a = 
+                Math.sin(dLat/2) * Math.sin(dLat/2) +
+                Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon/2) * Math.sin(dLon/2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+            return R * c; // Distância em km
         }
 
         function acompanharCorrida(id) {
@@ -154,7 +189,6 @@
                             motoMarker.setLatLng([latMoto, lngMoto]);
                         }
 
-                        // Atualiza rota e calcula tempo
                         atualizarRota(latMoto, lngMoto, coords.lat, coords.lng);
                     }
                 }
@@ -162,11 +196,7 @@
         }
 
         function atualizarRota(latInicio, lngInicio, latFim, lngFim) {
-            const waypoints = [
-                L.latLng(latInicio, lngInicio),
-                L.latLng(latFim, lngFim)
-            ];
-
+            const waypoints = [L.latLng(latInicio, lngInicio), L.latLng(latFim, lngFim)];
             if (rotaControl) {
                 rotaControl.setWaypoints(waypoints);
             } else {
@@ -180,12 +210,7 @@
                     show: false
                 })
                 .on('routesfound', function(e) {
-                    // --- MÁGICA DO TEMPO AQUI ---
-                    const rotas = e.routes;
-                    const resumo = rotas[0].summary;
-                    // O tempo vem em segundos, dividimos por 60 para ter minutos
-                    const minutos = Math.ceil(resumo.totalTime / 60);
-                    
+                    const minutos = Math.ceil(e.routes[0].summary.totalTime / 60);
                     const divTempo = document.getElementById('tempoChegada');
                     divTempo.style.display = 'block';
                     divTempo.innerText = minutos + " min";
