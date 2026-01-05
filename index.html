@@ -538,7 +538,8 @@
                 });
         }
 
-        // --- BUSCA DE ENDEREÇO ---
+        // --- BUSCA DE ENDEREÇO E GPS ATUALIZADOS ---
+        
         let debounceTimer;
         function buscarEndereco(txt, tipo) {
             clearTimeout(debounceTimer);
@@ -547,7 +548,8 @@
             if(txt.length < 3) { box.style.display='none'; return; }
             
             debounceTimer = setTimeout(async () => {
-                const url = `https://nominatim.openstreetmap.org/search?format=json&addressdetails=1&q=${txt}&viewbox=-48.1,-22.9,-47.9,-23.1&bounded=1`;
+                // Removemos o 'bounded=1' para aceitar locais famosos e adicionamos viewbox para priorizar Conchas
+                const url = `https://nominatim.openstreetmap.org/search?format=json&addressdetails=1&q=${txt}&limit=5&countrycodes=br&viewbox=-48.1,-22.9,-47.9,-23.1`;
                 try {
                     const res = await fetch(url);
                     const data = await res.json();
@@ -558,10 +560,23 @@
                         data.forEach(l => {
                             const div = document.createElement('div');
                             div.className = 'suggestion-item';
-                            const nomeRua = l.address.road || l.name || l.display_name.split(',')[0];
-                            const bairro = l.address.suburb || "Conchas";
-                            div.innerText = `📍 ${nomeRua} - ${bairro}`;
-                            div.onclick = () => selecionarLocal(l, tipo, div.innerText);
+                            
+                            // LÓGICA INTELIGENTE DE NOME
+                            let titulo = l.name || l.address.road || l.display_name.split(',')[0];
+                            let detalhes = "";
+
+                            // Monta os detalhes (Rua, Número, Bairro)
+                            if(l.address.road && titulo !== l.address.road) detalhes += l.address.road;
+                            if(l.address.house_number) detalhes += `, ${l.address.house_number}`;
+                            if(l.address.suburb) detalhes += ` - ${l.address.suburb}`;
+                            if(!detalhes) detalhes = "Conchas - SP"; // Fallback
+
+                            div.innerHTML = `
+                                <div style="font-weight:bold; color:#000;">📍 ${titulo}</div>
+                                <div style="font-size:0.8rem; color:#666;">${detalhes}</div>
+                            `;
+                            
+                            div.onclick = () => selecionarLocal(l, tipo, `${titulo}${detalhes ? ' ('+detalhes+')' : ''}`);
                             box.appendChild(div);
                         });
                     } else box.style.display = 'none';
@@ -596,6 +611,33 @@
 
             box.style.display = 'none';
             atualizarLinhaRota();
+        }
+
+        async function obterEndereco(lat, lng, el) {
+            try {
+                // Adicionei zoom=18 para pegar mais detalhes do número
+                const r = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`);
+                const d = await r.json();
+                
+                let texto = d.address.road || d.address.pedestrian || d.name || "Local sem nome";
+                
+                // Se tiver número, adiciona
+                if (d.address.house_number) {
+                    texto += `, ${d.address.house_number}`;
+                } else {
+                    texto += ` (Aprox.)`; // Avisa que é aproximado se não achar número
+                }
+
+                // Se tiver bairro, adiciona
+                if (d.address.suburb) {
+                    texto += ` - ${d.address.suburb}`;
+                }
+
+                document.getElementById(el).value = texto;
+            } catch(e){
+                console.error(e);
+                document.getElementById(el).value = "Local no Mapa (GPS)";
+            }
         }
 
         // --- RECUPERAÇÃO DE ESTADO ---
@@ -803,14 +845,6 @@
                     });
                 }
             });
-        }
-
-        async function obterEndereco(lat, lng, el) {
-            try {
-                const r = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`);
-                const d = await r.json();
-                document.getElementById(el).value = d.address.road || "Local";
-            } catch(e){}
         }
 
         function atualizarLinhaRota() {
