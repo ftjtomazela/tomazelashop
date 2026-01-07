@@ -4,12 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Moto Conchas</title>
+    
     <meta name="apple-mobile-web-app-capable" content="yes">
-
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-
-<meta name="apple-mobile-web-app-title" content="Moto Conchas">
-
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Moto Conchas">
     
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
     <link rel="manifest" href="manifest.json">
@@ -21,15 +19,16 @@
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
         
         body { 
-            body { background-color: #f0f2f5; height: 100vh; height: 100dvh; ... }
-
+            background-color: #f0f2f5; 
+            height: 100vh; 
+            height: 100dvh; /* Ajuste para celulares modernos */
             overflow: hidden; 
             overscroll-behavior-y: none; 
         }
 
         /* MAPA */
         #map { 
-            height: 100vh; 
+            height: 100%; 
             width: 100vw; 
             position: absolute; 
             z-index: 1; 
@@ -169,22 +168,17 @@
 
         /* LOADER E LOGO */
         #loader-inicial { 
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
-            background: #121212; z-index: 4000; display: flex; 
-            justify-content: center; align-items: center; flex-direction: column; 
+            position: fixed; top: 0; left: 0; 
+            width: 100%; height: 100vh; height: 100dvh; 
+            background: #121212; z-index: 9999; 
+            padding: 0; margin: 0; display: flex; 
         }
-        /* Efeito de pulso na logo */
-        .logo-loading {
-            width: 120px; height: 120px; 
-            border-radius: 25px; 
-            animation: pulse 1.5s infinite;
-            box-shadow: 0 0 20px rgba(241, 196, 15, 0.2);
+        .logo-fullscreen {
+            width: 100%; height: 100%;
+            object-fit: cover; object-position: center;
+            animation: fadeIn 0.5s ease-out;
         }
-        @keyframes pulse {
-            0% { transform: scale(1); opacity: 1; }
-            50% { transform: scale(1.05); opacity: 0.8; }
-            100% { transform: scale(1); opacity: 1; }
-        }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
         
         /* MODAIS GERAIS */
         .modal-full { 
@@ -200,8 +194,7 @@
 <body>
     
     <div id="loader-inicial">
-        <img src="icon-515.png" alt="Moto Conchas" class="logo-loading">
-        <div style="border: 3px solid #333; border-top: 3px solid #f1c40f; border-radius: 50%; width: 25px; height: 25px; animation: spin 1s infinite; margin-top: 20px;"></div>
+        <img src="Icon-515.png" alt="Moto Conchas" class="logo-fullscreen">
     </div>
 
     <button id="menuBtn" class="menu-btn" onclick="toggleMenu()">☰</button>
@@ -315,7 +308,7 @@
             
             <div class="input-group" id="grupoDestino">
                 <div class="dot dot-red"></div>
-                <input type="text" id="destinoInput" class="input-app" placeholder="Digite o destino..." oninput="buscarEndereco(this.value, 'destino')">
+                <input type="text" id="destinoInput" class="input-app" placeholder="Digite o destino... (Ex: Rodoviária)" oninput="buscarEndereco(this.value, 'destino')">
             </div>
             
             <div id="listaSugestoes" class="suggestions-box"></div>
@@ -561,8 +554,9 @@
             if(txt.length < 3) { box.style.display='none'; return; }
             
             debounceTimer = setTimeout(async () => {
-                // Removemos o 'bounded=1' para aceitar locais famosos e adicionamos viewbox para priorizar Conchas
-                const url = `https://nominatim.openstreetmap.org/search?format=json&addressdetails=1&q=${txt}&limit=5&countrycodes=br&viewbox=-48.1,-22.9,-47.9,-23.1`;
+                // MUDANÇA PRINCIPAL AQUI: "Conchas SP" no texto + Bounded + Viewbox
+                const txtBusca = `${txt}, Conchas, SP`;
+                const url = `https://nominatim.openstreetmap.org/search?format=json&addressdetails=1&q=${encodeURIComponent(txtBusca)}&limit=5&countrycodes=br&viewbox=-48.15,-22.90,-47.90,-23.15&bounded=1`;
                 try {
                     const res = await fetch(url);
                     const data = await res.json();
@@ -578,11 +572,10 @@
                             let titulo = l.name || l.address.road || l.display_name.split(',')[0];
                             let detalhes = "";
 
-                            // Monta os detalhes (Rua, Número, Bairro)
                             if(l.address.road && titulo !== l.address.road) detalhes += l.address.road;
                             if(l.address.house_number) detalhes += `, ${l.address.house_number}`;
                             if(l.address.suburb) detalhes += ` - ${l.address.suburb}`;
-                            if(!detalhes) detalhes = "Conchas - SP"; // Fallback
+                            if(!detalhes) detalhes = "Conchas - SP"; 
 
                             div.innerHTML = `
                                 <div style="font-weight:bold; color:#000;">📍 ${titulo}</div>
@@ -634,14 +627,12 @@
                 
                 let texto = d.address.road || d.address.pedestrian || d.name || "Local sem nome";
                 
-                // Se tiver número, adiciona
                 if (d.address.house_number) {
                     texto += `, ${d.address.house_number}`;
                 } else {
-                    texto += ` (Aprox.)`; // Avisa que é aproximado se não achar número
+                    texto += ` (Aprox.)`;
                 }
 
-                // Se tiver bairro, adiciona
                 if (d.address.suburb) {
                     texto += ` - ${d.address.suburb}`;
                 }
@@ -744,8 +735,6 @@
                 }
             } catch(e) {
                 console.error("Erro ao verificar motoristas:", e);
-                // Se der erro na verificação (ex: sem internet), deixamos passar ou bloqueamos?
-                // Vamos deixar passar para não travar o app se a rede oscilar, ou você pode retornar se preferir rigor.
             }
 
             document.getElementById('tela-rota').classList.add('hidden');
