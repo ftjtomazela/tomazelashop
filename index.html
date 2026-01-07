@@ -906,6 +906,24 @@
         function abrirHistorico() { document.getElementById('modal-historico').style.display = 'block'; toggleMenu(); document.getElementById('lista-historico').innerHTML = "Carregando..."; db.collection('corridas').where('uid', '==', userAtual.uid).orderBy('data', 'desc').limit(10).get().then(s => { document.getElementById('lista-historico').innerHTML = ""; s.forEach(d => { const dd=d.data(); document.getElementById('lista-historico').innerHTML += `<div class="history-card"><b>${dd.destino}</b><br><small>${dd.status}</small></div>`; }) }); }
         function fecharModal(id) { document.getElementById(id).style.display = 'none'; }
         function sair() { auth.signOut(); location.reload(); }
+        
+        // --- RASTREADOR DE PRESENÇA (PASSAGEIRO) ---
+function iniciarRastreadorOnline(uid) {
+    const atualizar = () => {
+        db.collection('users').doc(uid).update({
+            ultimo_visto: firebase.firestore.FieldValue.serverTimestamp(),
+            tipo_usuario: 'passageiro',
+            online_agora: true
+        }).catch(()=>{}); // Ignora erro se usuário não tiver doc ainda
+    };
+    atualizar(); // Chama agora
+    setInterval(atualizar, 60000); // Repete a cada 60 segundos
+}
+
+// ATENÇÃO: Adicione a chamada dessa função dentro do auth.onAuthStateChanged
+// Procure onde tem: if(u) { ... } e adicione: iniciarRastreadorOnline(u.uid);
+
+        
     </script>
     
     <a href="https://wa.me/5514981722063?text=Preciso%20de%20ajuda%20no%20MotoApp" 
