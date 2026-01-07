@@ -363,6 +363,7 @@
 
     <script>
         // O firebase-config.js já inicializou o 'app' e criou a const 'db'.
+        // NÃO recriamos a const db aqui para evitar o erro.
         const auth = firebase.auth();
         const functions = firebase.functions();
         
@@ -387,7 +388,7 @@
         const iconMoto = L.icon({ iconUrl: 'https://cdn-icons-png.flaticon.com/512/1986/1986937.png', iconSize: [40, 40], iconAnchor: [20, 20] });
 
         let markerOrigem, markerDestino, markerMoto, rotaControl, coordsOrigem, coordsDestino, userAtual, corridaAtualID = null;
-        let notaAtual = 0; 
+        let notaAtual = 0; // Para avaliação
 
         // TRAVA DE SAÍDA
         window.onbeforeunload = function() {
@@ -408,8 +409,11 @@
                 document.getElementById('perfilTel').value = dados.telefone || "";
                 
                 verificarCorridaAtiva(user.uid);
+                
+                // CONFIGURA NOTIFICAÇÕES AO LOGAR
                 configurarNotificacoes(user.uid);
-                iniciarRastreadorOnline(user.uid); // <--- MONITORAMENTO ONLINE ADICIONADO
+                // ADICIONE ESSA LINHA AQUI:
+                iniciarRastreadorOnline(user.uid); 
             } else {
                 document.getElementById('loader-inicial').style.display = 'none';
                 document.getElementById('auth-container').style.display = 'flex';
@@ -574,7 +578,7 @@
             
             debounceTimer = setTimeout(async () => {
                 // MUDANÇA PRINCIPAL AQUI: "Conchas SP" no texto + Bounded + Viewbox
-                const txtBusca = `${txt}, Conchas, São Paulo`;
+                const txtBusca = `${txt}, Conchas, SP`;
                 const url = `https://nominatim.openstreetmap.org/search?format=json&addressdetails=1&q=${encodeURIComponent(txtBusca)}&limit=5&countrycodes=br&viewbox=-48.15,-22.90,-47.90,-23.15&bounded=1`;
                 try {
                     const res = await fetch(url);
@@ -648,17 +652,20 @@
 
         async function obterEndereco(lat, lng, el) {
             try {
+                // Adicionei zoom=18 para pegar mais detalhes do número
                 const r = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`);
                 const d = await r.json();
                 
                 let texto = d.address.road || d.address.pedestrian || d.name || "Local sem nome";
                 
+                // Se tiver número, adiciona
                 if (d.address.house_number) {
                     texto += `, ${d.address.house_number}`;
                 } else {
                     texto += ` (Aprox.)`;
                 }
 
+                // Se tiver bairro, adiciona
                 if (d.address.suburb) {
                     texto += ` - ${d.address.suburb}`;
                 }
