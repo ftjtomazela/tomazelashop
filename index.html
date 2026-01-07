@@ -415,6 +415,8 @@
             } else {
                 document.getElementById('loader-inicial').style.display = 'none';
                 document.getElementById('auth-container').style.display = 'flex';
+                        // ADICIONE ESSA LINHA AQUI:
+        iniciarRastreadorOnline(user.uid); 
             }
         });
 
