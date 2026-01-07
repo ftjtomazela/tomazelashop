@@ -21,7 +21,7 @@
         body { 
             background-color: #f0f2f5; 
             height: 100vh; 
-            height: 100dvh; /* Ajuste para celulares modernos */
+            height: 100dvh; 
             overflow: hidden; 
             overscroll-behavior-y: none; 
         }
@@ -166,19 +166,26 @@
         .msg-me { align-self: flex-end; background: #000; color: white; border-radius: 15px 15px 0 15px; }
         .msg-other { align-self: flex-start; background: #fff; color: #333; border-radius: 15px 15px 15px 0; border: 1px solid #ddd; }
 
-        /* LOADER E LOGO */
+        /* LOADER E LOGO (MODO ORIGINAL) */
         #loader-inicial { 
-            position: fixed; top: 0; left: 0; 
-            width: 100%; height: 100vh; height: 100dvh; 
-            background: #121212; z-index: 9999; 
-            padding: 0; margin: 0; display: flex; 
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+            background: #121212; z-index: 4000; display: flex; 
+            justify-content: center; align-items: center; flex-direction: column; 
         }
-        .logo-fullscreen {
-            width: 100%; height: 100%;
-            object-fit: cover; object-position: center;
-            animation: fadeIn 0.5s ease-out;
+        .logo-loading {
+            width: 150px; 
+            height: 150px; 
+            border-radius: 25px;
+            object-fit: contain; 
+            animation: pulse 2s infinite;
+            box-shadow: 0 0 30px rgba(241, 196, 15, 0.1);
         }
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes pulse {
+            0% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.05); opacity: 0.9; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         
         /* MODAIS GERAIS */
         .modal-full { 
@@ -194,7 +201,8 @@
 <body>
     
     <div id="loader-inicial">
-        <img src="Icon-515.png" alt="Moto Conchas" class="logo-fullscreen">
+        <img src="Icon-515.png" alt="Moto Conchas" class="logo-loading">
+        <div style="border: 3px solid #333; border-top: 3px solid #f1c40f; border-radius: 50%; width: 30px; height: 30px; animation: spin 1s infinite; margin-top: 30px;"></div>
     </div>
 
     <button id="menuBtn" class="menu-btn" onclick="toggleMenu()">☰</button>
@@ -554,9 +562,10 @@
             if(txt.length < 3) { box.style.display='none'; return; }
             
             debounceTimer = setTimeout(async () => {
-                // MUDANÇA PRINCIPAL AQUI: "Conchas SP" no texto + Bounded + Viewbox
-                const txtBusca = `${txt}, Conchas, SP`;
+                // Adiciona "Conchas" na busca e restringe a área (Viewbox)
+                const txtBusca = `${txt}, Conchas, São Paulo`;
                 const url = `https://nominatim.openstreetmap.org/search?format=json&addressdetails=1&q=${encodeURIComponent(txtBusca)}&limit=5&countrycodes=br&viewbox=-48.15,-22.90,-47.90,-23.15&bounded=1`;
+                
                 try {
                     const res = await fetch(url);
                     const data = await res.json();
@@ -564,8 +573,9 @@
                     
                     // FILTRAGEM EXTRA VIA JAVASCRIPT
                     const resultadosFiltrados = data.filter(item => {
+                        // Só aceita se o endereço contiver "Conchas" ou estiver muito perto (pela latitude)
                         const lat = parseFloat(item.lat);
-                        const isPerto = lat < -22.90 && lat > -23.15; // Verifica latitude de Conchas
+                        const isPerto = lat < -22.90 && lat > -23.15; // Verifica se está na latitude de Conchas
                         return isPerto;
                     });
 
@@ -575,7 +585,6 @@
                             const div = document.createElement('div');
                             div.className = 'suggestion-item';
                             
-                            // LÓGICA INTELIGENTE DE NOME
                             let titulo = l.name || l.address.road || l.display_name.split(',')[0];
                             let detalhes = "";
 
@@ -583,7 +592,8 @@
                             if(l.address.house_number) detalhes += `, ${l.address.house_number}`;
                             if(l.address.suburb) detalhes += ` - ${l.address.suburb}`;
                             
-                            if(!detalhes) detalhes = l.address.city || l.address.town || "Conchas";
+                            // Se não tiver bairro, mostra a cidade para confirmar que é Conchas
+                            if(!detalhes) detalhes = l.address.city || l.address.town || l.address.village || "Conchas";
 
                             div.innerHTML = `
                                 <div style="font-weight:bold; color:#000;">📍 ${titulo}</div>
@@ -593,7 +603,9 @@
                             div.onclick = () => selecionarLocal(l, tipo, `${titulo} (${detalhes})`);
                             box.appendChild(div);
                         });
-                    } else box.style.display = 'none';
+                    } else {
+                        box.style.display = 'none';
+                    }
                 } catch(e) { console.error(e); }
             }, 500);
         }
@@ -635,12 +647,14 @@
                 
                 let texto = d.address.road || d.address.pedestrian || d.name || "Local sem nome";
                 
+                // Se tiver número, adiciona
                 if (d.address.house_number) {
                     texto += `, ${d.address.house_number}`;
                 } else {
-                    texto += ` (Aprox.)`;
+                    texto += ` (Aprox.)`; // Avisa que é aproximado se não achar número
                 }
 
+                // Se tiver bairro, adiciona
                 if (d.address.suburb) {
                     texto += ` - ${d.address.suburb}`;
                 }
