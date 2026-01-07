@@ -562,9 +562,16 @@
                     const data = await res.json();
                     box.innerHTML = "";
                     
-                    if(data.length > 0) {
+                    // FILTRAGEM EXTRA VIA JAVASCRIPT
+                    const resultadosFiltrados = data.filter(item => {
+                        const lat = parseFloat(item.lat);
+                        const isPerto = lat < -22.90 && lat > -23.15; // Verifica latitude de Conchas
+                        return isPerto;
+                    });
+
+                    if(resultadosFiltrados.length > 0) {
                         box.style.display = 'block';
-                        data.forEach(l => {
+                        resultadosFiltrados.forEach(l => {
                             const div = document.createElement('div');
                             div.className = 'suggestion-item';
                             
@@ -575,14 +582,15 @@
                             if(l.address.road && titulo !== l.address.road) detalhes += l.address.road;
                             if(l.address.house_number) detalhes += `, ${l.address.house_number}`;
                             if(l.address.suburb) detalhes += ` - ${l.address.suburb}`;
-                            if(!detalhes) detalhes = "Conchas - SP"; 
+                            
+                            if(!detalhes) detalhes = l.address.city || l.address.town || "Conchas";
 
                             div.innerHTML = `
                                 <div style="font-weight:bold; color:#000;">📍 ${titulo}</div>
                                 <div style="font-size:0.8rem; color:#666;">${detalhes}</div>
                             `;
                             
-                            div.onclick = () => selecionarLocal(l, tipo, `${titulo}${detalhes ? ' ('+detalhes+')' : ''}`);
+                            div.onclick = () => selecionarLocal(l, tipo, `${titulo} (${detalhes})`);
                             box.appendChild(div);
                         });
                     } else box.style.display = 'none';
@@ -735,6 +743,8 @@
                 }
             } catch(e) {
                 console.error("Erro ao verificar motoristas:", e);
+                // Se der erro na verificação (ex: sem internet), deixamos passar ou bloqueamos?
+                // Vamos deixar passar para não travar o app se a rede oscilar, ou você pode retornar se preferir rigor.
             }
 
             document.getElementById('tela-rota').classList.add('hidden');
