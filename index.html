@@ -201,7 +201,7 @@
 <body>
     
     <div id="loader-inicial">
-        <img src="icon-515.png" alt="Moto Conchas" class="logo-loading">
+        <img src="Icon-515.png" alt="Moto Conchas" class="logo-loading">
         <div style="border: 3px solid #333; border-top: 3px solid #f1c40f; border-radius: 50%; width: 30px; height: 30px; animation: spin 1s infinite; margin-top: 30px;"></div>
     </div>
 
@@ -363,7 +363,6 @@
 
     <script>
         // O firebase-config.js já inicializou o 'app' e criou a const 'db'.
-        // NÃO recriamos a const db aqui para evitar o erro.
         const auth = firebase.auth();
         const functions = firebase.functions();
         
@@ -388,7 +387,7 @@
         const iconMoto = L.icon({ iconUrl: 'https://cdn-icons-png.flaticon.com/512/1986/1986937.png', iconSize: [40, 40], iconAnchor: [20, 20] });
 
         let markerOrigem, markerDestino, markerMoto, rotaControl, coordsOrigem, coordsDestino, userAtual, corridaAtualID = null;
-        let notaAtual = 0; // Para avaliação
+        let notaAtual = 0; 
 
         // TRAVA DE SAÍDA
         window.onbeforeunload = function() {
@@ -409,16 +408,26 @@
                 document.getElementById('perfilTel').value = dados.telefone || "";
                 
                 verificarCorridaAtiva(user.uid);
-                
-                // CONFIGURA NOTIFICAÇÕES AO LOGAR
                 configurarNotificacoes(user.uid);
+                iniciarRastreadorOnline(user.uid); // <--- MONITORAMENTO ONLINE ADICIONADO
             } else {
                 document.getElementById('loader-inicial').style.display = 'none';
                 document.getElementById('auth-container').style.display = 'flex';
-                        // ADICIONE ESSA LINHA AQUI:
-        iniciarRastreadorOnline(user.uid); 
             }
         });
+
+        // --- RASTREADOR DE PRESENÇA (PASSAGEIRO) ---
+        function iniciarRastreadorOnline(uid) {
+            const atualizar = () => {
+                db.collection('users').doc(uid).update({
+                    ultimo_visto: firebase.firestore.FieldValue.serverTimestamp(),
+                    tipo_usuario: 'passageiro',
+                    online_agora: true
+                }).catch(()=>{}); 
+            };
+            atualizar(); 
+            setInterval(atualizar, 60000); 
+        }
 
         // --- SISTEMA DE AVALIAÇÃO ---
         function abrirAvaliacao() {
@@ -564,10 +573,9 @@
             if(txt.length < 3) { box.style.display='none'; return; }
             
             debounceTimer = setTimeout(async () => {
-                // Adiciona "Conchas" na busca e restringe a área (Viewbox)
+                // MUDANÇA PRINCIPAL AQUI: "Conchas SP" no texto + Bounded + Viewbox
                 const txtBusca = `${txt}, Conchas, São Paulo`;
                 const url = `https://nominatim.openstreetmap.org/search?format=json&addressdetails=1&q=${encodeURIComponent(txtBusca)}&limit=5&countrycodes=br&viewbox=-48.15,-22.90,-47.90,-23.15&bounded=1`;
-                
                 try {
                     const res = await fetch(url);
                     const data = await res.json();
@@ -575,9 +583,8 @@
                     
                     // FILTRAGEM EXTRA VIA JAVASCRIPT
                     const resultadosFiltrados = data.filter(item => {
-                        // Só aceita se o endereço contiver "Conchas" ou estiver muito perto (pela latitude)
                         const lat = parseFloat(item.lat);
-                        const isPerto = lat < -22.90 && lat > -23.15; // Verifica se está na latitude de Conchas
+                        const isPerto = lat < -22.90 && lat > -23.15; // Verifica latitude de Conchas
                         return isPerto;
                     });
 
@@ -587,6 +594,7 @@
                             const div = document.createElement('div');
                             div.className = 'suggestion-item';
                             
+                            // LÓGICA INTELIGENTE DE NOME
                             let titulo = l.name || l.address.road || l.display_name.split(',')[0];
                             let detalhes = "";
 
@@ -594,8 +602,7 @@
                             if(l.address.house_number) detalhes += `, ${l.address.house_number}`;
                             if(l.address.suburb) detalhes += ` - ${l.address.suburb}`;
                             
-                            // Se não tiver bairro, mostra a cidade para confirmar que é Conchas
-                            if(!detalhes) detalhes = l.address.city || l.address.town || l.address.village || "Conchas";
+                            if(!detalhes) detalhes = l.address.city || l.address.town || "Conchas";
 
                             div.innerHTML = `
                                 <div style="font-weight:bold; color:#000;">📍 ${titulo}</div>
@@ -605,9 +612,7 @@
                             div.onclick = () => selecionarLocal(l, tipo, `${titulo} (${detalhes})`);
                             box.appendChild(div);
                         });
-                    } else {
-                        box.style.display = 'none';
-                    }
+                    } else box.style.display = 'none';
                 } catch(e) { console.error(e); }
             }, 500);
         }
@@ -643,20 +648,17 @@
 
         async function obterEndereco(lat, lng, el) {
             try {
-                // Adicionei zoom=18 para pegar mais detalhes do número
                 const r = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`);
                 const d = await r.json();
                 
                 let texto = d.address.road || d.address.pedestrian || d.name || "Local sem nome";
                 
-                // Se tiver número, adiciona
                 if (d.address.house_number) {
                     texto += `, ${d.address.house_number}`;
                 } else {
-                    texto += ` (Aprox.)`; // Avisa que é aproximado se não achar número
+                    texto += ` (Aprox.)`;
                 }
 
-                // Se tiver bairro, adiciona
                 if (d.address.suburb) {
                     texto += ` - ${d.address.suburb}`;
                 }
@@ -750,17 +752,15 @@
             const d2 = calcularDistanciaKm(coordsDestino.lat, coordsDestino.lng, CENTRO_CONCHAS.lat, CENTRO_CONCHAS.lng);
             if(d1 > RAIO_MAXIMO_KM || d2 > RAIO_MAXIMO_KM) return alert("Fora da área de cobertura (5km).");
 
-            // --- NOVA VERIFICAÇÃO: Se tem motorista online ---
+            // --- VERIFICAÇÃO DE MOTORISTA ONLINE ---
             try {
-                // Procura UM usuário que tenha isOnline = true
                 const check = await db.collection('users').where('isOnline', '==', true).limit(1).get();
                 if(check.empty) {
+                    // BLOQUEIA AQUI SE NÃO TIVER MOTO
                     return alert("🚫 Nenhum motorista online agora.\nTente mais tarde!");
                 }
             } catch(e) {
                 console.error("Erro ao verificar motoristas:", e);
-                // Se der erro na verificação (ex: sem internet), deixamos passar ou bloqueamos?
-                // Vamos deixar passar para não travar o app se a rede oscilar, ou você pode retornar se preferir rigor.
             }
 
             document.getElementById('tela-rota').classList.add('hidden');
@@ -908,24 +908,6 @@
         function abrirHistorico() { document.getElementById('modal-historico').style.display = 'block'; toggleMenu(); document.getElementById('lista-historico').innerHTML = "Carregando..."; db.collection('corridas').where('uid', '==', userAtual.uid).orderBy('data', 'desc').limit(10).get().then(s => { document.getElementById('lista-historico').innerHTML = ""; s.forEach(d => { const dd=d.data(); document.getElementById('lista-historico').innerHTML += `<div class="history-card"><b>${dd.destino}</b><br><small>${dd.status}</small></div>`; }) }); }
         function fecharModal(id) { document.getElementById(id).style.display = 'none'; }
         function sair() { auth.signOut(); location.reload(); }
-        
-        // --- RASTREADOR DE PRESENÇA (PASSAGEIRO) ---
-function iniciarRastreadorOnline(uid) {
-    const atualizar = () => {
-        db.collection('users').doc(uid).update({
-            ultimo_visto: firebase.firestore.FieldValue.serverTimestamp(),
-            tipo_usuario: 'passageiro',
-            online_agora: true
-        }).catch(()=>{}); // Ignora erro se usuário não tiver doc ainda
-    };
-    atualizar(); // Chama agora
-    setInterval(atualizar, 60000); // Repete a cada 60 segundos
-}
-
-// ATENÇÃO: Adicione a chamada dessa função dentro do auth.onAuthStateChanged
-// Procure onde tem: if(u) { ... } e adicione: iniciarRastreadorOnline(u.uid);
-
-        
     </script>
     
     <a href="https://wa.me/5514981722063?text=Preciso%20de%20ajuda%20no%20MotoApp" 
