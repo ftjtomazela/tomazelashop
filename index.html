@@ -166,12 +166,14 @@
         .msg-me { align-self: flex-end; background: #000; color: white; border-radius: 15px 15px 0 15px; }
         .msg-other { align-self: flex-start; background: #fff; color: #333; border-radius: 15px 15px 15px 0; border: 1px solid #ddd; }
 
-        /* LOADER E LOGO (MODO ORIGINAL) */
+        /* LOADER E LOGO */
         #loader-inicial { 
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
-            background: #121212; z-index: 4000; display: flex; 
-            justify-content: center; align-items: center; flex-direction: column; 
+            position: fixed; top: 0; left: 0; 
+            width: 100%; height: 100vh; height: 100dvh; 
+            background: #121212; z-index: 9999; 
+            padding: 0; margin: 0; display: flex; justify-content:center; align-items:center;
         }
+        /* LOGO CENTRALIZADA E PULSANDO */
         .logo-loading {
             width: 150px; 
             height: 150px; 
@@ -201,8 +203,8 @@
 <body>
     
     <div id="loader-inicial">
-        <img src="icon-515.png" alt="Moto Conchas" class="logo-loading">
-        <div style="border: 3px solid #333; border-top: 3px solid #f1c40f; border-radius: 50%; width: 30px; height: 30px; animation: spin 1s infinite; margin-top: 30px;"></div>
+        <img src="Icon-515.png" alt="Moto Conchas" class="logo-loading">
+        <div style="border: 3px solid #333; border-top: 3px solid #f1c40f; border-radius: 50%; width: 30px; height: 30px; animation: spin 1s infinite; margin-top: 30px; position:absolute; bottom: 20%;"></div>
     </div>
 
     <button id="menuBtn" class="menu-btn" onclick="toggleMenu()">☰</button>
@@ -363,19 +365,18 @@
 
     <script>
         // O firebase-config.js já inicializou o 'app' e criou a const 'db'.
-        // NÃO recriamos a const db aqui para evitar o erro.
         const auth = firebase.auth();
         const functions = firebase.functions();
         
         const CENTRO_CONCHAS = { lat: -23.0134, lng: -48.0089 };
         const RAIO_MAXIMO_KM = 5;
 
-        // INICIALIZAÇÃO DO MESSAGING (PUSH)
+        // INICIALIZAÇÃO DO MESSAGING (PUSH) - BLINDADO PARA NÃO TRAVAR
         let messaging;
         try {
             messaging = firebase.messaging();
         } catch (e) {
-            console.log("Messaging não suportado neste navegador");
+            console.warn("Messaging não suportado ou erro no SW:", e);
         }
 
         // MAPA
@@ -410,10 +411,18 @@
                 
                 verificarCorridaAtiva(user.uid);
                 
-                // CONFIGURA NOTIFICAÇÕES AO LOGAR
-                configurarNotificacoes(user.uid);
-                // ADICIONE ESSA LINHA AQUI:
-                iniciarRastreadorOnline(user.uid); 
+                // CONFIGURA NOTIFICAÇÕES SE DISPONÍVEL
+                if(messaging) configurarNotificacoes(user.uid);
+                iniciarRastreadorOnline(user.uid); // <--- MONITORAMENTO ONLINE ADICIONADO
+                
+                // Esconde Loader e mostra App
+                document.getElementById('loader-inicial').style.display = 'none';
+                document.getElementById('map').style.display = 'block';
+                document.getElementById('painel-app').style.display = 'block';
+                document.getElementById('menuBtn').style.display = 'flex';
+                map.invalidateSize(); 
+                iniciarGPS();
+
             } else {
                 document.getElementById('loader-inicial').style.display = 'none';
                 document.getElementById('auth-container').style.display = 'flex';
@@ -423,11 +432,11 @@
         // --- RASTREADOR DE PRESENÇA (PASSAGEIRO) ---
         function iniciarRastreadorOnline(uid) {
             const atualizar = () => {
-                db.collection('users').doc(uid).update({
+                db.collection('users').doc(uid).set({
                     ultimo_visto: firebase.firestore.FieldValue.serverTimestamp(),
                     tipo_usuario: 'passageiro',
                     online_agora: true
-                }).catch(()=>{}); 
+                }, { merge: true }).catch(()=>{}); 
             };
             atualizar(); 
             setInterval(atualizar, 60000); 
@@ -474,7 +483,7 @@
                             db.collection('users').doc(uid).update({ fcmToken: currentToken });
                         }
                     }).catch((err) => {
-                        console.log('Erro ao pegar token FCM: ', err);
+                        console.log('Erro token', err);
                     });
                 }
             });
@@ -577,7 +586,7 @@
             if(txt.length < 3) { box.style.display='none'; return; }
             
             debounceTimer = setTimeout(async () => {
-                // MUDANÇA PRINCIPAL AQUI: "Conchas SP" no texto + Bounded + Viewbox
+                // Adiciona "Conchas" na busca e restringe a área (Viewbox)
                 const txtBusca = `${txt}, Conchas, SP`;
                 const url = `https://nominatim.openstreetmap.org/search?format=json&addressdetails=1&q=${encodeURIComponent(txtBusca)}&limit=5&countrycodes=br&viewbox=-48.15,-22.90,-47.90,-23.15&bounded=1`;
                 try {
@@ -691,9 +700,9 @@
                         if (['pendente', 'aceito', 'aguardando_pagamento', 'aguardando_passageiro', 'em_viagem'].includes(data.status)) {
                             localStorage.setItem('passageiroCorridaID', doc.id);
                             restaurarEstado(doc.id, data);
-                        } else mostrarAppBase();
-                    } else mostrarAppBase();
-                } catch (e) { mostrarAppBase(); }
+                        }
+                    }
+                } catch (e) { console.log("Sem corrida ativa") }
             }
         }
 
@@ -703,13 +712,10 @@
                 const doc = await db.collection('corridas').doc(id).get();
                 if(!doc.exists) {
                     localStorage.removeItem('passageiroCorridaID');
-                    mostrarAppBase();
                     return;
                 }
                 data = doc.data();
             }
-
-            mostrarAppBase();
             
             if(data.origem && data.origem.lat) {
                 coordsOrigem = data.origem;
@@ -742,16 +748,6 @@
             }
         }
 
-        function mostrarAppBase() {
-            document.getElementById('auth-container').style.display = 'none';
-            document.getElementById('loader-inicial').style.display = 'none';
-            document.getElementById('map').style.display = 'block';
-            document.getElementById('painel-app').style.display = 'block';
-            document.getElementById('menuBtn').style.display = 'flex';
-            map.invalidateSize(); 
-            iniciarGPS();
-        }
-
         // --- AÇÃO E PAGAMENTO (COM VERIFICAÇÃO DE MOTORISTA ONLINE) ---
         async function irParaPagamento() {
             if(!coordsOrigem || !coordsDestino) return alert("Defina o destino.");
@@ -761,13 +757,14 @@
 
             // --- VERIFICAÇÃO DE MOTORISTA ONLINE ---
             try {
+                // VERIFICAÇÃO SIMPLES: BASTA 1 MOTORISTA ONLINE
                 const check = await db.collection('users').where('isOnline', '==', true).limit(1).get();
                 if(check.empty) {
-                    // BLOQUEIA AQUI SE NÃO TIVER MOTO
                     return alert("🚫 Nenhum motorista online agora.\nTente mais tarde!");
                 }
             } catch(e) {
                 console.error("Erro ao verificar motoristas:", e);
+                // Se der erro de índice ou rede, permitimos passar para não travar o cliente à toa
             }
 
             document.getElementById('tela-rota').classList.add('hidden');
