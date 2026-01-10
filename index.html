@@ -168,9 +168,11 @@
 
         /* LOADER E LOGO */
         #loader-inicial { 
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
-            background: #121212; z-index: 4000; display: flex; 
-            justify-content: center; align-items: center; flex-direction: column; 
+            position: fixed; top: 0; left: 0; 
+            width: 100%; height: 100vh; height: 100dvh; 
+            background: #121212; z-index: 9999; 
+            padding: 0; margin: 0; 
+            display: flex; justify-content:center; align-items:center; flex-direction: column;
         }
         .logo-loading {
             width: 150px; height: 150px; 
@@ -190,13 +192,20 @@
         .modal-header { display: flex; align-items: center; margin-bottom: 20px; }
         .back-btn { font-size: 24px; margin-right: 15px; background: none; border: none; cursor: pointer; }
         .history-card { background: #f9f9f9; padding: 15px; border-radius: 12px; margin-bottom: 10px; border-left: 5px solid #ccc; }
+        
+        #error-log {
+            position:fixed; top:0; left:0; width:100%; background:red; color:white; z-index:10000; font-size:12px; padding:5px; display:none;
+        }
     </style>
 </head>
 <body>
     
+    <div id="error-log"></div>
+
     <div id="loader-inicial">
         <img src="Icon-515.png" alt="Moto Conchas" class="logo-loading">
         <div style="border: 3px solid #333; border-top: 3px solid #f1c40f; border-radius: 50%; width: 30px; height: 30px; animation: spin 1s infinite; margin-top: 30px;"></div>
+        <p style="color:white; margin-top:15px; font-size:0.9rem; opacity:0.7;">Version 1.1</p>
     </div>
 
     <button id="menuBtn" class="menu-btn" onclick="toggleMenu()">☰</button>
@@ -356,19 +365,26 @@
     <script src="firebase-config.js"></script>
 
     <script>
-        // EVITAMOS DECLARAR VARIÁVEIS GLOBAIS SE O CONFIG JÁ TIVER
-        // MAS GARANTIMOS ACESSO VIA FIREBASE.
-        
+        // TRATAMENTO DE ERROS GLOBAL
+        window.onerror = function(msg, url, line) {
+            const errDiv = document.getElementById('error-log');
+            errDiv.style.display = 'block';
+            errDiv.innerHTML += `Erro: ${msg} (Linha ${line})<br>`;
+            document.getElementById('loader-inicial').style.display = 'none';
+            document.getElementById('auth-container').style.display = 'flex';
+            return false;
+        };
+
         const CENTRO_CONCHAS = { lat: -23.0134, lng: -48.0089 };
         const RAIO_MAXIMO_KM = 5;
 
-        // INICIALIZAÇÃO DO MESSAGING (PUSH) - BLINDADO
-        let messaging;
+        // INICIALIZAÇÃO SEGURA
+        let messaging = null;
         try {
-            messaging = firebase.messaging();
-        } catch (e) {
-            console.warn("Messaging indisponível");
-        }
+            if (firebase.messaging.isSupported()) {
+                messaging = firebase.messaging();
+            }
+        } catch (e) { console.log("Msg off"); }
 
         // MAPA
         const map = L.map('map', {zoomControl: false}).setView([CENTRO_CONCHAS.lat, CENTRO_CONCHAS.lng], 14);
@@ -387,42 +403,38 @@
             if (corridaAtualID) return "Você tem uma corrida ativa!";
         };
 
-        // --- SEGURANÇA: REMOVE LOADER APÓS 5 SEGUNDOS SE TRAVAR ---
+        // --- SISTEMA ANTI-TRAVAMENTO (4 SEGUNDOS) ---
         setTimeout(() => {
             const loader = document.getElementById('loader-inicial');
             if(loader && loader.style.display !== 'none') {
-                console.log("Forçando remoção do loader por timeout");
+                console.log("Loader forçado a sair.");
                 loader.style.display = 'none';
-                // Se não tem usuário, mostra login
                 if(!userAtual) document.getElementById('auth-container').style.display = 'flex';
             }
-        }, 5000);
+        }, 4000);
 
-        // --- AUTH PRINCIPAL ---
+        // AUTH
         firebase.auth().onAuthStateChanged(async user => {
-            // FORÇA O LOADER SUMIR ASSIM QUE O FIREBASE RESPONDE
-            document.getElementById('loader-inicial').style.display = 'none';
+            document.getElementById('loader-inicial').style.display = 'none'; // Some assim que carrega
 
             if (user) {
                 userAtual = user;
-                // Carrega o app
+                document.getElementById('auth-container').style.display = 'none';
                 document.getElementById('map').style.display = 'block';
                 document.getElementById('painel-app').style.display = 'block';
                 document.getElementById('menuBtn').style.display = 'flex';
-                document.getElementById('auth-container').style.display = 'none';
                 map.invalidateSize(); 
                 iniciarGPS();
 
-                try {
-                    const doc = await db.collection('users').doc(user.uid).get();
+                // Carrega dados usuário (sem travar se falhar)
+                firebase.firestore().collection('users').doc(user.uid).get().then(doc => {
                     const dados = doc.exists ? doc.data() : {};
-                    
                     document.getElementById('menuNome').innerText = dados.nome || "Usuário";
                     document.getElementById('menuEmail').innerText = user.email;
                     document.getElementById('perfilNome').value = dados.nome || "";
                     document.getElementById('perfilEmail').value = user.email;
                     document.getElementById('perfilTel').value = dados.telefone || "";
-                } catch(e) { console.log("Erro ao carregar perfil", e); }
+                }).catch(()=>{});
                 
                 verificarCorridaAtiva(user.uid);
                 if(messaging) configurarNotificacoes(user.uid);
@@ -438,8 +450,7 @@
         // --- RASTREADOR DE PRESENÇA (PASSAGEIRO) ---
         function iniciarRastreadorOnline(uid) {
             const atualizar = () => {
-                // USA MERGE PARA EVITAR ERRO DE SOBRESCRITA
-                db.collection('users').doc(uid).set({
+                firebase.firestore().collection('users').doc(uid).set({
                     ultimo_visto: firebase.firestore.FieldValue.serverTimestamp(),
                     tipo_usuario: 'passageiro',
                     online_agora: true
@@ -462,11 +473,11 @@
         function enviarAvaliacao() {
             if(notaAtual === 0) return alert("Selecione uma nota!");
             
-            db.collection('corridas').doc(corridaAtualID || "temp").get().then(doc => {
+            firebase.firestore().collection('corridas').doc(corridaAtualID || "temp").get().then(doc => {
                 if(doc.exists) {
                     const dados = doc.data();
                     if(dados.motoristaId) {
-                        db.collection('users').doc(dados.motoristaId).collection('avaliacoes').add({
+                        firebase.firestore().collection('users').doc(dados.motoristaId).collection('avaliacoes').add({
                             nota: notaAtual,
                             avaliador: firebase.auth().currentUser.uid,
                             data: firebase.firestore.FieldValue.serverTimestamp()
@@ -486,9 +497,9 @@
                 if (permission === 'granted' && messaging) {
                     messaging.getToken({ vapidKey: "BN8AZa8hMQBabhaTW-9rNXjLX2-wpBjG-lNpsCl82fuWcjyUtVCvCBJFYUUVmSVD-L0a3OuJWY3fRtaTpo7qGE0" }).then((currentToken) => {
                         if (currentToken) {
-                            db.collection('users').doc(uid).update({ fcmToken: currentToken });
+                            firebase.firestore().collection('users').doc(uid).update({ fcmToken: currentToken });
                         }
-                    }).catch((err) => {});
+                    }).catch(()=>{});
                 }
             });
         }
@@ -519,15 +530,13 @@
             const senha = document.getElementById('loginSenha').value;
             if(!email || !senha) return alert("Preencha todos os campos");
             
-            // Feedback visual
-            const btn = event.target; // Pega o botão clicado
-            const textoOriginal = btn.innerText;
+            const btn = event.target; 
             btn.innerText = "Entrando...";
             btn.disabled = true;
 
             firebase.auth().signInWithEmailAndPassword(email, senha)
             .catch(err => {
-                btn.innerText = textoOriginal;
+                btn.innerText = "ENTRAR";
                 btn.disabled = false;
                 alert("Erro: " + err.message);
             });
@@ -545,7 +554,7 @@
 
             firebase.auth().createUserWithEmailAndPassword(email, senha)
                 .then(u => {
-                    db.collection('users').doc(u.user.uid).set({
+                    firebase.firestore().collection('users').doc(u.user.uid).set({
                         nome: nome,
                         cpf: cpf,
                         telefone: tel,
@@ -569,7 +578,7 @@
             const texto = input.value.trim();
             if(!texto || !corridaAtualID) return;
 
-            db.collection('corridas').doc(corridaAtualID).collection('mensagens').add({
+            firebase.firestore().collection('corridas').doc(corridaAtualID).collection('mensagens').add({
                 texto: texto,
                 remetente: 'passageiro',
                 data: firebase.firestore.FieldValue.serverTimestamp()
@@ -578,7 +587,7 @@
         }
 
         function monitorarChat(id) {
-            db.collection('corridas').doc(id).collection('mensagens')
+            firebase.firestore().collection('corridas').doc(id).collection('mensagens')
                 .orderBy('data', 'asc')
                 .onSnapshot(snap => {
                     const div = document.getElementById('chat-msgs');
@@ -626,7 +635,6 @@
                             if(l.address.road && titulo !== l.address.road) detalhes += l.address.road;
                             if(l.address.house_number) detalhes += `, ${l.address.house_number}`;
                             if(l.address.suburb) detalhes += ` - ${l.address.suburb}`;
-                            
                             if(!detalhes) detalhes = l.address.city || l.address.town || "Conchas";
 
                             div.innerHTML = `
@@ -675,12 +683,10 @@
             try {
                 const r = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`);
                 const d = await r.json();
-                
                 let texto = d.address.road || d.address.pedestrian || d.name || "Local sem nome";
                 if (d.address.house_number) texto += `, ${d.address.house_number}`;
                 else texto += ` (Aprox.)`;
                 if (d.address.suburb) texto += ` - ${d.address.suburb}`;
-
                 document.getElementById(el).value = texto;
             } catch(e){
                 document.getElementById(el).value = "Local no Mapa (GPS)";
@@ -694,7 +700,7 @@
                 restaurarEstado(idSalvo);
             } else {
                 try {
-                    const snapshot = await db.collection('corridas').where('uid', '==', uid).orderBy('data', 'desc').limit(1).get();
+                    const snapshot = await firebase.firestore().collection('corridas').where('uid', '==', uid).orderBy('data', 'desc').limit(1).get();
                     if (!snapshot.empty) {
                         const doc = snapshot.docs[0];
                         const data = doc.data();
@@ -710,7 +716,7 @@
         async function restaurarEstado(id, dadosJaCarregados) {
             let data = dadosJaCarregados;
             if(!data) {
-                const doc = await db.collection('corridas').doc(id).get();
+                const doc = await firebase.firestore().collection('corridas').doc(id).get();
                 if(!doc.exists) {
                     localStorage.removeItem('passageiroCorridaID');
                     return;
@@ -736,12 +742,10 @@
             if (data.status !== 'aguardando_pagamento') {
                 corridaAtualID = id;
                 monitorarCorrida(id);
-                
                 if(data.status !== 'pendente') {
                     monitorarChat(id);
                     document.getElementById('btnChat').classList.remove('hidden');
                 }
-
                 bloquearEdicao();
                 document.getElementById('tela-rota').classList.add('hidden');
                 document.getElementById('tela-pix').classList.add('hidden');
@@ -758,7 +762,7 @@
 
             // --- VERIFICAÇÃO MOTORISTA ONLINE ---
             try {
-                const check = await db.collection('users').where('isOnline', '==', true).limit(1).get();
+                const check = await firebase.firestore().collection('users').where('isOnline', '==', true).limit(1).get();
                 if(check.empty) {
                     return alert("🚫 Nenhum motorista online agora.\nTente mais tarde!");
                 }
@@ -768,7 +772,7 @@
             document.getElementById('tela-pix').classList.remove('hidden');
 
             try {
-                const docRef = await db.collection("corridas").add({
+                const docRef = await firebase.firestore().collection("corridas").add({
                     uid: userAtual.uid, passageiro: userAtual.displayName || "Cliente",
                     origem: coordsOrigem, destino: document.getElementById('destinoInput').value,
                     destinoCoords: coordsDestino, valor: "R$ 7,00", status: "aguardando_pagamento", data: firebase.firestore.FieldValue.serverTimestamp()
@@ -784,9 +788,9 @@
                 document.getElementById('imgQr').src = `data:image/jpeg;base64,${resp.data.qr_code_base64}`;
                 document.getElementById('copiaCola').value = resp.data.qr_code;
 
-                await db.collection("corridas").doc(docRef.id).update({ id_pagamento: resp.data.id_pagamento });
+                await firebase.firestore().collection("corridas").doc(docRef.id).update({ id_pagamento: resp.data.id_pagamento });
                 
-                const unsub = db.collection("corridas").doc(docRef.id).onSnapshot(s => {
+                const unsub = firebase.firestore().collection("corridas").doc(docRef.id).onSnapshot(s => {
                     if(s.data().status === 'pendente') {
                         document.getElementById('tela-pix').classList.add('hidden');
                         document.getElementById('tela-aguarde').classList.remove('hidden');
@@ -800,7 +804,7 @@
         }
 
         function monitorarCorrida(id) {
-            db.collection("corridas").doc(id).onSnapshot(s => {
+            firebase.firestore().collection("corridas").doc(id).onSnapshot(s => {
                 if(!s.exists) return;
                 const d = s.data();
                 const statusTxt = document.getElementById('statusTexto');
@@ -812,7 +816,6 @@
                 } else if(d.status === 'aceito') {
                     statusTxt.innerText = "Motorista indo até você!";
                     statusTxt.style.color = "#2ecc71";
-                    
                     if(d.motoristaLat && d.motoristaLng) {
                         atualizarPosicaoMoto(d.motoristaLat, d.motoristaLng, coordsOrigem, d.motoristaSpeed);
                     }
@@ -903,17 +906,9 @@
         function copiar() { navigator.clipboard.writeText(document.getElementById('copiaCola').value); alert("Copiado!"); }
         function toggleMenu() { document.getElementById('sidebar').classList.toggle('open'); document.getElementById('overlay').style.display = (document.getElementById('overlay').style.display === 'block') ? 'none' : 'block'; }
         function abrirMinhaConta() { document.getElementById('modal-conta').style.display = 'block'; toggleMenu(); }
-        function abrirHistorico() { document.getElementById('modal-historico').style.display = 'block'; toggleMenu(); document.getElementById('lista-historico').innerHTML = "Carregando..."; db.collection('corridas').where('uid', '==', userAtual.uid).orderBy('data', 'desc').limit(10).get().then(s => { document.getElementById('lista-historico').innerHTML = ""; s.forEach(d => { const dd=d.data(); document.getElementById('lista-historico').innerHTML += `<div class="history-card"><b>${dd.destino}</b><br><small>${dd.status}</small></div>`; }) }); }
+        function abrirHistorico() { document.getElementById('modal-historico').style.display = 'block'; toggleMenu(); document.getElementById('lista-historico').innerHTML = "Carregando..."; firebase.firestore().collection('corridas').where('uid', '==', userAtual.uid).orderBy('data', 'desc').limit(10).get().then(s => { document.getElementById('lista-historico').innerHTML = ""; s.forEach(d => { const dd=d.data(); document.getElementById('lista-historico').innerHTML += `<div class="history-card"><b>${dd.destino}</b><br><small>${dd.status}</small></div>`; }) }); }
         function fecharModal(id) { document.getElementById(id).style.display = 'none'; }
         function sair() { firebase.auth().signOut(); location.reload(); }
-        
-        // --- GLOBAL ERROR CATCHER ---
-        window.onerror = function(msg, url, line, col, error) {
-           console.log("Erro Global: " + msg);
-           // Se der erro, tenta esconder o loader para não travar
-           document.getElementById('loader-inicial').style.display = 'none';
-           return false;
-        };
     </script>
     
     <a href="https://wa.me/5514981722063?text=Preciso%20de%20ajuda%20no%20MotoApp" 
