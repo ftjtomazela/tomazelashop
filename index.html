@@ -168,25 +168,17 @@
 
         /* LOADER E LOGO */
         #loader-inicial { 
-            position: fixed; top: 0; left: 0; 
-            width: 100%; height: 100vh; height: 100dvh; 
-            background: #121212; z-index: 9999; 
-            padding: 0; margin: 0; display: flex; justify-content:center; align-items:center;
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+            background: #121212; z-index: 4000; display: flex; 
+            justify-content: center; align-items: center; flex-direction: column; 
         }
-        /* LOGO CENTRALIZADA E PULSANDO */
         .logo-loading {
-            width: 150px; 
-            height: 150px; 
-            border-radius: 25px;
-            object-fit: contain; 
+            width: 150px; height: 150px; 
+            border-radius: 25px; object-fit: contain; 
             animation: pulse 2s infinite;
             box-shadow: 0 0 30px rgba(241, 196, 15, 0.1);
         }
-        @keyframes pulse {
-            0% { transform: scale(1); opacity: 1; }
-            50% { transform: scale(1.05); opacity: 0.9; }
-            100% { transform: scale(1); opacity: 1; }
-        }
+        @keyframes pulse { 0% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.05); opacity: 0.9; } 100% { transform: scale(1); opacity: 1; } }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         
         /* MODAIS GERAIS */
@@ -204,7 +196,7 @@
     
     <div id="loader-inicial">
         <img src="Icon-515.png" alt="Moto Conchas" class="logo-loading">
-        <div style="border: 3px solid #333; border-top: 3px solid #f1c40f; border-radius: 50%; width: 30px; height: 30px; animation: spin 1s infinite; margin-top: 30px; position:absolute; bottom: 20%;"></div>
+        <div style="border: 3px solid #333; border-top: 3px solid #f1c40f; border-radius: 50%; width: 30px; height: 30px; animation: spin 1s infinite; margin-top: 30px;"></div>
     </div>
 
     <button id="menuBtn" class="menu-btn" onclick="toggleMenu()">☰</button>
@@ -364,19 +356,19 @@
     <script src="firebase-config.js"></script>
 
     <script>
-        // O firebase-config.js já inicializou o 'app' e criou a const 'db'.
+        // O firebase-config.js JÁ cria a const 'db'. NÃO recriamos aqui.
         const auth = firebase.auth();
         const functions = firebase.functions();
         
         const CENTRO_CONCHAS = { lat: -23.0134, lng: -48.0089 };
         const RAIO_MAXIMO_KM = 5;
 
-        // INICIALIZAÇÃO DO MESSAGING (PUSH) - BLINDADO PARA NÃO TRAVAR
+        // INICIALIZAÇÃO DO MESSAGING (PUSH) - PROTEGIDO
         let messaging;
         try {
             messaging = firebase.messaging();
         } catch (e) {
-            console.warn("Messaging não suportado ou erro no SW:", e);
+            console.warn("Messaging indisponível");
         }
 
         // MAPA
@@ -389,17 +381,27 @@
         const iconMoto = L.icon({ iconUrl: 'https://cdn-icons-png.flaticon.com/512/1986/1986937.png', iconSize: [40, 40], iconAnchor: [20, 20] });
 
         let markerOrigem, markerDestino, markerMoto, rotaControl, coordsOrigem, coordsDestino, userAtual, corridaAtualID = null;
-        let notaAtual = 0; // Para avaliação
+        let notaAtual = 0; 
 
         // TRAVA DE SAÍDA
         window.onbeforeunload = function() {
             if (corridaAtualID) return "Você tem uma corrida ativa!";
         };
 
-        // AUTH
+        // AUTH - AQUI ESTAVA O PROBLEMA DO LOADER
         auth.onAuthStateChanged(async user => {
+            // FORÇA O LOADER SUMIR ASSIM QUE O FIREBASE RESPONDE
+            document.getElementById('loader-inicial').style.display = 'none';
+
             if (user) {
                 userAtual = user;
+                // Só carrega o app se tiver usuário
+                document.getElementById('map').style.display = 'block';
+                document.getElementById('painel-app').style.display = 'block';
+                document.getElementById('menuBtn').style.display = 'flex';
+                map.invalidateSize(); 
+                iniciarGPS();
+
                 const doc = await db.collection('users').doc(user.uid).get();
                 const dados = doc.exists ? doc.data() : {};
                 
@@ -410,21 +412,9 @@
                 document.getElementById('perfilTel').value = dados.telefone || "";
                 
                 verificarCorridaAtiva(user.uid);
-                
-                // CONFIGURA NOTIFICAÇÕES SE DISPONÍVEL
                 if(messaging) configurarNotificacoes(user.uid);
-                iniciarRastreadorOnline(user.uid); // <--- MONITORAMENTO ONLINE ADICIONADO
-                
-                // Esconde Loader e mostra App
-                document.getElementById('loader-inicial').style.display = 'none';
-                document.getElementById('map').style.display = 'block';
-                document.getElementById('painel-app').style.display = 'block';
-                document.getElementById('menuBtn').style.display = 'flex';
-                map.invalidateSize(); 
-                iniciarGPS();
-
+                iniciarRastreadorOnline(user.uid); 
             } else {
-                document.getElementById('loader-inicial').style.display = 'none';
                 document.getElementById('auth-container').style.display = 'flex';
             }
         });
@@ -436,7 +426,7 @@
                     ultimo_visto: firebase.firestore.FieldValue.serverTimestamp(),
                     tipo_usuario: 'passageiro',
                     online_agora: true
-                }, { merge: true }).catch(()=>{}); 
+                }, { merge: true }).catch(()=>{}); // USANDO MERGE PARA NÃO DAR ERRO
             };
             atualizar(); 
             setInterval(atualizar, 60000); 
@@ -455,7 +445,6 @@
         function enviarAvaliacao() {
             if(notaAtual === 0) return alert("Selecione uma nota!");
             
-            // Busca o ID do motorista para avaliar
             db.collection('corridas').doc(corridaAtualID || "temp").get().then(doc => {
                 if(doc.exists) {
                     const dados = doc.data();
@@ -474,7 +463,7 @@
             });
         }
 
-        // --- SISTEMA DE NOTIFICAÇÕES PUSH E LOCAL ---
+        // --- NOTIFICAÇÕES ---
         function configurarNotificacoes(uid) {
             Notification.requestPermission().then(permission => {
                 if (permission === 'granted' && messaging) {
@@ -482,9 +471,7 @@
                         if (currentToken) {
                             db.collection('users').doc(uid).update({ fcmToken: currentToken });
                         }
-                    }).catch((err) => {
-                        console.log('Erro token', err);
-                    });
+                    }).catch((err) => {});
                 }
             });
         }
@@ -499,7 +486,7 @@
             }
         }
 
-        // --- SISTEMA DE LOGIN E CADASTRO ---
+        // --- LOGIN E CADASTRO ---
         function alternarAuth(tela) {
             if(tela === 'cadastro') {
                 document.getElementById('form-login').classList.add('hidden');
@@ -576,8 +563,7 @@
                 });
         }
 
-        // --- BUSCA DE ENDEREÇO E GPS ATUALIZADOS ---
-        
+        // --- BUSCA DE ENDEREÇO ---
         let debounceTimer;
         function buscarEndereco(txt, tipo) {
             clearTimeout(debounceTimer);
@@ -586,7 +572,6 @@
             if(txt.length < 3) { box.style.display='none'; return; }
             
             debounceTimer = setTimeout(async () => {
-                // Adiciona "Conchas" na busca e restringe a área (Viewbox)
                 const txtBusca = `${txt}, Conchas, SP`;
                 const url = `https://nominatim.openstreetmap.org/search?format=json&addressdetails=1&q=${encodeURIComponent(txtBusca)}&limit=5&countrycodes=br&viewbox=-48.15,-22.90,-47.90,-23.15&bounded=1`;
                 try {
@@ -594,10 +579,9 @@
                     const data = await res.json();
                     box.innerHTML = "";
                     
-                    // FILTRAGEM EXTRA VIA JAVASCRIPT
                     const resultadosFiltrados = data.filter(item => {
                         const lat = parseFloat(item.lat);
-                        const isPerto = lat < -22.90 && lat > -23.15; // Verifica latitude de Conchas
+                        const isPerto = lat < -22.90 && lat > -23.15; 
                         return isPerto;
                     });
 
@@ -607,7 +591,6 @@
                             const div = document.createElement('div');
                             div.className = 'suggestion-item';
                             
-                            // LÓGICA INTELIGENTE DE NOME
                             let titulo = l.name || l.address.road || l.display_name.split(',')[0];
                             let detalhes = "";
 
@@ -661,32 +644,21 @@
 
         async function obterEndereco(lat, lng, el) {
             try {
-                // Adicionei zoom=18 para pegar mais detalhes do número
                 const r = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`);
                 const d = await r.json();
                 
                 let texto = d.address.road || d.address.pedestrian || d.name || "Local sem nome";
-                
-                // Se tiver número, adiciona
-                if (d.address.house_number) {
-                    texto += `, ${d.address.house_number}`;
-                } else {
-                    texto += ` (Aprox.)`;
-                }
-
-                // Se tiver bairro, adiciona
-                if (d.address.suburb) {
-                    texto += ` - ${d.address.suburb}`;
-                }
+                if (d.address.house_number) texto += `, ${d.address.house_number}`;
+                else texto += ` (Aprox.)`;
+                if (d.address.suburb) texto += ` - ${d.address.suburb}`;
 
                 document.getElementById(el).value = texto;
             } catch(e){
-                console.error(e);
                 document.getElementById(el).value = "Local no Mapa (GPS)";
             }
         }
 
-        // --- RECUPERAÇÃO DE ESTADO ---
+        // --- ESTADO E APP ---
         async function verificarCorridaAtiva(uid) {
             const idSalvo = localStorage.getItem('passageiroCorridaID');
             if(idSalvo) {
@@ -702,7 +674,7 @@
                             restaurarEstado(doc.id, data);
                         }
                     }
-                } catch (e) { console.log("Sem corrida ativa") }
+                } catch (e) { }
             }
         }
 
@@ -748,24 +720,20 @@
             }
         }
 
-        // --- AÇÃO E PAGAMENTO (COM VERIFICAÇÃO DE MOTORISTA ONLINE) ---
+        // --- AÇÃO E PAGAMENTO ---
         async function irParaPagamento() {
             if(!coordsOrigem || !coordsDestino) return alert("Defina o destino.");
             const d1 = calcularDistanciaKm(coordsOrigem.lat, coordsOrigem.lng, CENTRO_CONCHAS.lat, CENTRO_CONCHAS.lng);
             const d2 = calcularDistanciaKm(coordsDestino.lat, coordsDestino.lng, CENTRO_CONCHAS.lat, CENTRO_CONCHAS.lng);
             if(d1 > RAIO_MAXIMO_KM || d2 > RAIO_MAXIMO_KM) return alert("Fora da área de cobertura (5km).");
 
-            // --- VERIFICAÇÃO DE MOTORISTA ONLINE ---
+            // --- VERIFICAÇÃO MOTORISTA ONLINE ---
             try {
-                // VERIFICAÇÃO SIMPLES: BASTA 1 MOTORISTA ONLINE
                 const check = await db.collection('users').where('isOnline', '==', true).limit(1).get();
                 if(check.empty) {
                     return alert("🚫 Nenhum motorista online agora.\nTente mais tarde!");
                 }
-            } catch(e) {
-                console.error("Erro ao verificar motoristas:", e);
-                // Se der erro de índice ou rede, permitimos passar para não travar o cliente à toa
-            }
+            } catch(e) { console.error("Erro busca moto:", e); }
 
             document.getElementById('tela-rota').classList.add('hidden');
             document.getElementById('tela-pix').classList.remove('hidden');
@@ -819,9 +787,7 @@
                     if(d.motoristaLat && d.motoristaLng) {
                         atualizarPosicaoMoto(d.motoristaLat, d.motoristaLng, coordsOrigem, d.motoristaSpeed);
                     }
-                    
                     dispararNotificacaoLocal("Motorista Aceitou!", "Seu motorista está a caminho.");
-                    
                     monitorarChat(id);
                     document.getElementById('btnChat').classList.remove('hidden');
 
@@ -830,7 +796,6 @@
                     statusTxt.style.color = "#f1c40f";
                     tempoTxt.innerText = "Chegou";
                     if(navigator.vibrate) navigator.vibrate([200, 100, 200]);
-                    
                     dispararNotificacaoLocal("Motorista Chegou!", "Encontre seu motorista no local.");
 
                 } else if(d.status === 'em_viagem') {
