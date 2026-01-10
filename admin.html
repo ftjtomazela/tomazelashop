@@ -7,30 +7,58 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;800&display=swap" rel="stylesheet">
     <style>
         body { background: #121212; color: white; font-family: 'Inter', sans-serif; padding: 20px; text-align: center; }
-        .card { background: #1e1e1e; padding: 20px; border-radius: 15px; margin-bottom: 20px; border: 1px solid #333; }
-        .numero { font-size: 4rem; font-weight: 800; margin: 10px 0; }
+        .container { max-width: 800px; margin: 0 auto; }
+        
+        .card { background: #1e1e1e; padding: 20px; border-radius: 15px; margin-bottom: 20px; border: 1px solid #333; text-align: left; }
+        .card-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #333; padding-bottom: 10px; margin-bottom: 10px; }
+        
+        .numero { font-size: 2.5rem; font-weight: 800; }
         .verde { color: #2ecc71; }
         .azul { color: #3498db; }
-        .titulo { color: #888; text-transform: uppercase; letter-spacing: 1px; font-size: 0.9rem; }
-        .lista { text-align: left; max-height: 200px; overflow-y: auto; font-size: 0.8rem; color: #aaa; }
-        .item { padding: 5px 0; border-bottom: 1px solid #333; }
+        
+        .titulo { color: #888; text-transform: uppercase; letter-spacing: 1px; font-size: 0.9rem; font-weight: bold; }
+        
+        .lista { max-height: 300px; overflow-y: auto; }
+        .item { padding: 10px 0; border-bottom: 1px solid #2a2a2a; display: flex; align-items: center; font-size: 0.95rem; }
+        
+        .status-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; margin-right: 8px; }
+        .online { background: #2ecc71; box-shadow: 0 0 5px #2ecc71; }
+        .offline { background: #e74c3c; }
+        .app-open { background: #3498db; }
+
+        .aviso-erro { color: #e74c3c; background: rgba(231, 76, 60, 0.1); padding: 10px; border-radius: 8px; font-size: 0.8rem; margin-top: 10px; display: none; }
     </style>
 </head>
 <body>
 
-    <h2 style="color:#f1c40f;">MONITORAMENTO EM TEMPO REAL</h2>
-    <p id="relogio" style="color:#666; margin-bottom: 30px;">Carregando...</p>
+    <div class="container">
+        <h2 style="color:#f1c40f;">MONITORAMENTO AO VIVO</h2>
+        <p id="relogio" style="color:#666; margin-bottom: 30px; font-size: 0.9rem;">Carregando dados...</p>
 
-    <div class="card">
-        <div class="titulo">Passageiros no App Agora</div>
-        <div id="qtdPassageiros" class="numero azul">0</div>
-        <div id="listaPassageiros" class="lista"></div>
-    </div>
+        <div id="erroIndex" class="aviso-erro">
+            ⚠️ <b>Atenção:</b> A consulta falhou. Pode ser necessário criar um índice no Firebase Console.<br>
+            Abra o console do navegador (F12) e clique no link gerado pelo erro.
+        </div>
 
-    <div class="card">
-        <div class="titulo">Motoristas Online Agora</div>
-        <div id="qtdMotoristas" class="numero verde">0</div>
-        <div id="listaMotoristas" class="lista"></div>
+        <div class="card">
+            <div class="card-header">
+                <span class="titulo">🏍️ MOTORISTAS CONECTADOS</span>
+                <span id="qtdMotoristas" class="numero verde">0</span>
+            </div>
+            <div id="listaMotoristas" class="lista">
+                <p style="color:#555; padding:10px;">Nenhum motorista online...</p>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <span class="titulo">👥 PASSAGEIROS NO APP</span>
+                <span id="qtdPassageiros" class="numero azul">0</span>
+            </div>
+            <div id="listaPassageiros" class="lista">
+                <p style="color:#555; padding:10px;">Nenhum passageiro...</p>
+            </div>
+        </div>
     </div>
 
     <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
@@ -45,15 +73,18 @@
         atualizarContagem();
 
         function atualizarContagem() {
-            document.getElementById('relogio').innerText = "Atualizado às: " + new Date().toLocaleTimeString();
+            document.getElementById('relogio').innerText = "Última verificação: " + new Date().toLocaleTimeString();
 
-            // Pega usuários que acessaram nos últimos 2 minutos
-            const doisMinutosAtras = new Date(Date.now() - 2 * 60 * 1000);
+            // Consideramos "Online" quem mandou sinal nos últimos 2 minutos
+            const limiteTempo = new Date(Date.now() - 2 * 60 * 1000); // 2 minutos atrás
 
             db.collection('users')
-                .where('ultimo_visto', '>', doisMinutosAtras)
+                .where('ultimo_visto', '>', limiteTempo)
+                .orderBy('ultimo_visto', 'desc') // Ordena do mais recente para o mais antigo
                 .get()
                 .then(snap => {
+                    document.getElementById('erroIndex').style.display = 'none'; // Esconde erro se der certo
+                    
                     let pass = 0;
                     let moto = 0;
                     let htmlPass = "";
@@ -62,21 +93,52 @@
                     snap.forEach(doc => {
                         const d = doc.data();
                         const nome = d.nome || "Anônimo";
+                        const tempoFormatado = d.ultimo_visto ? new Date(d.ultimo_visto.toDate()).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : '--:--';
                         
                         if (d.tipo_usuario === 'motorista') {
                             moto++;
-                            htmlMoto += `<div class="item">🏍️ ${nome}</div>`;
+                            // Verifica se o botão "Ficar Online" está verde no app dele
+                            const statusDot = d.isOnline ? "online" : "offline"; 
+                            const statusTexto = d.isOnline ? "Disponível" : "Ocupado/Offline";
+                            
+                            htmlMoto += `
+                                <div class="item">
+                                    <div class="status-dot ${statusDot}"></div>
+                                    <div style="flex:1">
+                                        <strong>${nome}</strong> 
+                                        <span style="color:#666; font-size:0.8rem">(${statusTexto})</span>
+                                    </div>
+                                    <div style="font-size:0.8rem; color:#555;">${tempoFormatado}</div>
+                                </div>`;
                         } else {
                             pass++;
-                            htmlPass += `<div class="item">👤 ${nome}</div>`;
+                            htmlPass += `
+                                <div class="item">
+                                    <div class="status-dot app-open"></div>
+                                    <div style="flex:1">
+                                        <strong>${nome}</strong>
+                                    </div>
+                                    <div style="font-size:0.8rem; color:#555;">${tempoFormatado}</div>
+                                </div>`;
                         }
                     });
 
+                    // Atualiza números
                     document.getElementById('qtdPassageiros').innerText = pass;
                     document.getElementById('qtdMotoristas').innerText = moto;
                     
-                    document.getElementById('listaPassageiros').innerHTML = htmlPass;
-                    document.getElementById('listaMotoristas').innerHTML = htmlMoto;
+                    // Atualiza listas
+                    if(htmlPass) document.getElementById('listaPassageiros').innerHTML = htmlPass;
+                    else document.getElementById('listaPassageiros').innerHTML = "<p style='color:#555; padding:10px;'>Nenhum passageiro...</p>";
+
+                    if(htmlMoto) document.getElementById('listaMotoristas').innerHTML = htmlMoto;
+                    else document.getElementById('listaMotoristas').innerHTML = "<p style='color:#555; padding:10px;'>Nenhum motorista...</p>";
+                })
+                .catch(err => {
+                    console.error("Erro na consulta Admin:", err);
+                    if(err.message.includes("index")) {
+                        document.getElementById('erroIndex').style.display = 'block';
+                    }
                 });
         }
     </script>
