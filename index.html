@@ -356,14 +356,13 @@
     <script src="firebase-config.js"></script>
 
     <script>
-        // O firebase-config.js JÁ cria a const 'db'. NÃO recriamos aqui.
-        const auth = firebase.auth();
-        const functions = firebase.functions();
+        // EVITAMOS DECLARAR VARIÁVEIS GLOBAIS SE O CONFIG JÁ TIVER
+        // MAS GARANTIMOS ACESSO VIA FIREBASE.
         
         const CENTRO_CONCHAS = { lat: -23.0134, lng: -48.0089 };
         const RAIO_MAXIMO_KM = 5;
 
-        // INICIALIZAÇÃO DO MESSAGING (PUSH) - PROTEGIDO
+        // INICIALIZAÇÃO DO MESSAGING (PUSH) - BLINDADO
         let messaging;
         try {
             messaging = firebase.messaging();
@@ -388,33 +387,50 @@
             if (corridaAtualID) return "Você tem uma corrida ativa!";
         };
 
-        // AUTH - AQUI ESTAVA O PROBLEMA DO LOADER
-        auth.onAuthStateChanged(async user => {
+        // --- SEGURANÇA: REMOVE LOADER APÓS 5 SEGUNDOS SE TRAVAR ---
+        setTimeout(() => {
+            const loader = document.getElementById('loader-inicial');
+            if(loader && loader.style.display !== 'none') {
+                console.log("Forçando remoção do loader por timeout");
+                loader.style.display = 'none';
+                // Se não tem usuário, mostra login
+                if(!userAtual) document.getElementById('auth-container').style.display = 'flex';
+            }
+        }, 5000);
+
+        // --- AUTH PRINCIPAL ---
+        firebase.auth().onAuthStateChanged(async user => {
             // FORÇA O LOADER SUMIR ASSIM QUE O FIREBASE RESPONDE
             document.getElementById('loader-inicial').style.display = 'none';
 
             if (user) {
                 userAtual = user;
-                // Só carrega o app se tiver usuário
+                // Carrega o app
                 document.getElementById('map').style.display = 'block';
                 document.getElementById('painel-app').style.display = 'block';
                 document.getElementById('menuBtn').style.display = 'flex';
+                document.getElementById('auth-container').style.display = 'none';
                 map.invalidateSize(); 
                 iniciarGPS();
 
-                const doc = await db.collection('users').doc(user.uid).get();
-                const dados = doc.exists ? doc.data() : {};
-                
-                document.getElementById('menuNome').innerText = dados.nome || "Usuário";
-                document.getElementById('menuEmail').innerText = user.email;
-                document.getElementById('perfilNome').value = dados.nome || "";
-                document.getElementById('perfilEmail').value = user.email;
-                document.getElementById('perfilTel').value = dados.telefone || "";
+                try {
+                    const doc = await db.collection('users').doc(user.uid).get();
+                    const dados = doc.exists ? doc.data() : {};
+                    
+                    document.getElementById('menuNome').innerText = dados.nome || "Usuário";
+                    document.getElementById('menuEmail').innerText = user.email;
+                    document.getElementById('perfilNome').value = dados.nome || "";
+                    document.getElementById('perfilEmail').value = user.email;
+                    document.getElementById('perfilTel').value = dados.telefone || "";
+                } catch(e) { console.log("Erro ao carregar perfil", e); }
                 
                 verificarCorridaAtiva(user.uid);
                 if(messaging) configurarNotificacoes(user.uid);
                 iniciarRastreadorOnline(user.uid); 
             } else {
+                document.getElementById('map').style.display = 'none';
+                document.getElementById('painel-app').style.display = 'none';
+                document.getElementById('menuBtn').style.display = 'none';
                 document.getElementById('auth-container').style.display = 'flex';
             }
         });
@@ -422,11 +438,12 @@
         // --- RASTREADOR DE PRESENÇA (PASSAGEIRO) ---
         function iniciarRastreadorOnline(uid) {
             const atualizar = () => {
+                // USA MERGE PARA EVITAR ERRO DE SOBRESCRITA
                 db.collection('users').doc(uid).set({
                     ultimo_visto: firebase.firestore.FieldValue.serverTimestamp(),
                     tipo_usuario: 'passageiro',
                     online_agora: true
-                }, { merge: true }).catch(()=>{}); // USANDO MERGE PARA NÃO DAR ERRO
+                }, { merge: true }).catch(()=>{}); 
             };
             atualizar(); 
             setInterval(atualizar, 60000); 
@@ -451,7 +468,7 @@
                     if(dados.motoristaId) {
                         db.collection('users').doc(dados.motoristaId).collection('avaliacoes').add({
                             nota: notaAtual,
-                            avaliador: auth.currentUser.uid,
+                            avaliador: firebase.auth().currentUser.uid,
                             data: firebase.firestore.FieldValue.serverTimestamp()
                         });
                     }
@@ -501,7 +518,19 @@
             const email = document.getElementById('loginEmail').value;
             const senha = document.getElementById('loginSenha').value;
             if(!email || !senha) return alert("Preencha todos os campos");
-            auth.signInWithEmailAndPassword(email, senha).catch(err => alert("Erro: " + err.message));
+            
+            // Feedback visual
+            const btn = event.target; // Pega o botão clicado
+            const textoOriginal = btn.innerText;
+            btn.innerText = "Entrando...";
+            btn.disabled = true;
+
+            firebase.auth().signInWithEmailAndPassword(email, senha)
+            .catch(err => {
+                btn.innerText = textoOriginal;
+                btn.disabled = false;
+                alert("Erro: " + err.message);
+            });
         }
 
         function cadastrarUsuario() {
@@ -514,7 +543,7 @@
             if(!nome || !cpf || !tel || !email || !senha) return alert("Preencha TODOS os campos!");
             if(senha.length < 6) return alert("A senha deve ter no mínimo 6 dígitos.");
 
-            auth.createUserWithEmailAndPassword(email, senha)
+            firebase.auth().createUserWithEmailAndPassword(email, senha)
                 .then(u => {
                     db.collection('users').doc(u.user.uid).set({
                         nome: nome,
@@ -747,7 +776,7 @@
                 
                 localStorage.setItem('passageiroCorridaID', docRef.id);
                 
-                const func = functions.httpsCallable('gerarPix');
+                const func = firebase.functions().httpsCallable('gerarPix');
                 const resp = await func({ email: userAtual.email, nome: "Cliente" });
                 
                 document.getElementById('loadingPix').classList.add('hidden');
@@ -876,7 +905,15 @@
         function abrirMinhaConta() { document.getElementById('modal-conta').style.display = 'block'; toggleMenu(); }
         function abrirHistorico() { document.getElementById('modal-historico').style.display = 'block'; toggleMenu(); document.getElementById('lista-historico').innerHTML = "Carregando..."; db.collection('corridas').where('uid', '==', userAtual.uid).orderBy('data', 'desc').limit(10).get().then(s => { document.getElementById('lista-historico').innerHTML = ""; s.forEach(d => { const dd=d.data(); document.getElementById('lista-historico').innerHTML += `<div class="history-card"><b>${dd.destino}</b><br><small>${dd.status}</small></div>`; }) }); }
         function fecharModal(id) { document.getElementById(id).style.display = 'none'; }
-        function sair() { auth.signOut(); location.reload(); }
+        function sair() { firebase.auth().signOut(); location.reload(); }
+        
+        // --- GLOBAL ERROR CATCHER ---
+        window.onerror = function(msg, url, line, col, error) {
+           console.log("Erro Global: " + msg);
+           // Se der erro, tenta esconder o loader para não travar
+           document.getElementById('loader-inicial').style.display = 'none';
+           return false;
+        };
     </script>
     
     <a href="https://wa.me/5514981722063?text=Preciso%20de%20ajuda%20no%20MotoApp" 
@@ -886,4 +923,3 @@
     </a>
 </body>
 </html>
-    
