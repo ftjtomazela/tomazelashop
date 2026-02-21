@@ -3,918 +3,178 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Moto Conchas</title>
-    
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="Moto Conchas">
-    
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
-    <link rel="manifest" href="manifest.json">
-    <link rel="apple-touch-icon" href="icon-192.png">
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.css" />
-
+    <title>MotoHorizon - Painel Digital</title>
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
-        
-        body { 
-            background-color: #f0f2f5; 
-            height: 100vh; 
-            height: 100dvh; 
-            overflow: hidden; 
-            overscroll-behavior-y: none; 
+        body {
+            margin: 0;
+            background: #111;
+            color: white;
+            font-family: 'Arial', sans-serif;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
         }
 
-        /* MAPA */
-        #map { 
-            height: 100%; 
-            width: 100vw; 
-            position: absolute; 
-            z-index: 1; 
-            display:none; 
-        }
-        .leaflet-routing-container { display: none !important; }
-
-        /* MENU LATERAL */
-        .menu-btn {
-            position: absolute; top: 20px; left: 20px; z-index: 1500;
-            background: white; border: none; width: 45px; height: 45px;
-            border-radius: 50%; box-shadow: 0 4px 10px rgba(0,0,0,0.2);
-            font-size: 24px; cursor: pointer; display: none;
-            align-items: center; justify-content: center;
-        }
-        .sidebar {
-            position: fixed; top: 0; left: -300px; width: 280px; height: 100%;
-            background: white; z-index: 2000; transition: 0.3s;
-            box-shadow: 2px 0 15px rgba(0,0,0,0.2); display: flex; flex-direction: column;
-        }
-        .sidebar.open { left: 0; }
-        .sidebar-header { background: #000; color: white; padding: 30px 20px; }
-        .user-avatar { 
-            width: 60px; height: 60px; background: #333; border-radius: 50%; 
-            display: flex; align-items: center; justify-content: center; 
-            font-size: 24px; border: 2px solid #f1c40f; margin-bottom: 10px; 
-        }
-        .menu-items { flex: 1; padding: 20px; overflow-y: auto; }
-        .menu-item { 
-            padding: 15px 0; border-bottom: 1px solid #eee; cursor: pointer; 
-            color: #333; font-weight: 600; display: flex; align-items: center; 
-        }
-        .overlay { 
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
-            background: rgba(0,0,0,0.5); z-index: 1900; display: none; 
-        }
-
-        /* PAINEL INFERIOR */
-        .bottom-sheet { 
-            position: absolute; bottom: 0; width: 100%; background: white; z-index: 1000; 
-            padding: 20px; border-radius: 25px 25px 0 0; 
-            box-shadow: 0 -5px 20px rgba(0,0,0,0.1); display:none; 
-            transition: transform 0.3s ease-out; max-height: 80vh; overflow-y: auto;
-        }
-        .hidden { display: none !important; }
-
-        /* INPUTS */
-        .input-group { 
-            display: flex; align-items: center; background: #f4f4f4; 
-            border-radius: 12px; padding: 12px; margin-bottom: 10px; 
+        /* Container do Horizonte Artificial */
+        #horizon-container {
             position: relative;
-        }
-        .input-app { border: none; background: transparent; width: 100%; outline: none; font-size: 16px; }
-        .input-group.disabled { background: #e0e0e0; opacity: 0.7; pointer-events: none; }
-        .dot { width: 10px; height: 10px; border-radius: 50%; margin-right: 12px; flex-shrink: 0; }
-        .dot-blue { background: #3498db; } .dot-red { background: #e74c3c; }
-        
-        .btn-black { 
-            width: 100%; background: #000; color: white; border: none; 
-            padding: 16px; border-radius: 12px; font-weight: bold; 
-            margin-top: 10px; cursor: pointer; 
-        }
-        .btn-outline { 
-            width: 100%; background: transparent; color: #000; border: 2px solid #000; 
-            padding: 16px; border-radius: 12px; font-weight: bold; 
-            margin-top: 10px; cursor: pointer; 
-        }
-        .link-text { 
-            color: #3498db; text-decoration: underline; cursor: pointer; 
-            font-size: 0.9rem; margin-top: 10px; display: block; 
+            width: 300px;
+            height: 300px;
+            border: 5px solid #444;
+            border-radius: 50%;
+            overflow: hidden;
+            background: #2c3e50; /* Cor do céu */
         }
 
-        /* SUGESTÕES */
-        .suggestions-box { 
-            background: white; border: 1px solid #eee; border-radius: 0 0 10px 10px; 
-            max-height: 200px; overflow-y: auto; 
-            position: absolute; width: 90%; left: 5%; 
-            z-index: 2500; box-shadow: 0 4px 10px rgba(0,0,0,0.1); 
-            display: none; 
+        #sky {
+            position: absolute;
+            width: 200%;
+            height: 200%;
+            background: linear-gradient(to bottom, #2980b9 50%, #8b4513 50%);
+            top: -50%;
+            left: -50%;
+            transition: transform 0.1s ease-out;
         }
-        .suggestion-item { padding: 15px; border-bottom: 1px solid #f0f0f0; cursor: pointer; font-size: 14px; }
-        .suggestion-item:hover { background-color: #f9f9f9; }
-        
-        /* LOGIN / CADASTRO */
-        #auth-container { 
-            width: 100%; height: 100%; display: flex; flex-direction: column; 
-            justify-content: center; align-items: center; padding: 20px; 
-            background: linear-gradient(135deg, #1a1a1a 0%, #333 100%); 
-            position:absolute; z-index:3000; overflow-y: auto; 
-        }
-        .auth-card { 
-            background: white; width: 100%; max-width: 400px; padding: 30px; 
-            border-radius: 20px; text-align: center; margin: auto 0; 
-        }
-        .input-box { 
-            width: 100%; padding: 14px; border: 1px solid #ddd; 
-            border-radius: 10px; margin-bottom: 15px; font-size: 16px; 
-        }
-        
-        /* CHAT FLUTUANTE */
-        .chat-modal { 
-            position: fixed; bottom: 0; left: 0; width: 100%; height: 70%; 
-            background: #f5f5f5; z-index: 6000; 
-            border-radius: 20px 20px 0 0; 
-            box-shadow: 0 -10px 30px rgba(0,0,0,0.3); 
-            display: flex; flex-direction: column; 
-            transform: translateY(100%); transition: transform 0.3s ease-out; 
-        }
-        .chat-modal.open { transform: translateY(0); }
-        .chat-header { 
-            padding: 15px; background: #000; color: white; 
-            display: flex; justify-content: space-between; align-items: center; 
-            border-radius: 20px 20px 0 0; 
-        }
-        .chat-body { 
-            flex: 1; padding: 15px; overflow-y: auto; 
-            display: flex; flex-direction: column; gap: 10px; 
-        }
-        .chat-footer { 
-            padding: 10px; background: white; display: flex; 
-            align-items: center; gap: 10px; border-top: 1px solid #ddd; 
-        }
-        .chat-input { 
-            flex: 1; padding: 12px; border-radius: 20px; 
-            border: 1px solid #ddd; outline: none; 
-        }
-        .chat-send { 
-            background: #2ecc71; border: none; width: 40px; height: 40px; 
-            border-radius: 50%; color: white; cursor: pointer; font-size: 18px; 
-        }
-        .msg { 
-            max-width: 80%; padding: 10px 15px; border-radius: 15px; 
-            font-size: 0.9rem; word-wrap: break-word; 
-        }
-        .msg-me { align-self: flex-end; background: #000; color: white; border-radius: 15px 15px 0 15px; }
-        .msg-other { align-self: flex-start; background: #fff; color: #333; border-radius: 15px 15px 15px 0; border: 1px solid #ddd; }
 
-        /* LOADER E LOGO */
-        #loader-inicial { 
-            position: fixed; top: 0; left: 0; 
-            width: 100%; height: 100vh; height: 100dvh; 
-            background: #121212; z-index: 9999; 
-            padding: 0; margin: 0; 
-            display: flex; justify-content:center; align-items:center; flex-direction: column;
+        /* Marcação central fixa (A moto) */
+        #aircraft-indicator {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 140px;
+            height: 4px;
+            background: #f1c40f;
+            z-index: 10;
         }
-        .logo-loading {
-            width: 150px; height: 150px; 
-            border-radius: 25px; object-fit: contain; 
-            animation: pulse 2s infinite;
-            box-shadow: 0 0 30px rgba(241, 196, 15, 0.1);
+
+        #aircraft-indicator::before {
+            content: '';
+            position: absolute;
+            left: 50%;
+            top: -10px;
+            transform: translateX(-50%);
+            border-left: 10px solid transparent;
+            border-right: 10px solid transparent;
+            border-bottom: 10px solid #f1c40f;
         }
-        @keyframes pulse { 0% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.05); opacity: 0.9; } 100% { transform: scale(1); opacity: 1; } }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        
-        /* MODAIS GERAIS */
-        .modal-full { 
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
-            background: white; z-index: 2100; padding: 20px; 
-            display: none; overflow-y: auto; 
+
+        /* Painel de Dados */
+        #data-panel {
+            margin-top: 20px;
+            text-align: center;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            width: 90%;
         }
-        .modal-header { display: flex; align-items: center; margin-bottom: 20px; }
-        .back-btn { font-size: 24px; margin-right: 15px; background: none; border: none; cursor: pointer; }
-        .history-card { background: #f9f9f9; padding: 15px; border-radius: 12px; margin-bottom: 10px; border-left: 5px solid #ccc; }
-        
-        #error-log {
-            position:fixed; top:0; left:0; width:100%; background:red; color:white; z-index:10000; font-size:12px; padding:5px; display:none;
+
+        .data-box {
+            background: #222;
+            padding: 15px;
+            border-radius: 10px;
+            border: 1px solid #333;
+        }
+
+        .value { font-size: 2em; font-weight: bold; color: #00ff00; }
+        .label { font-size: 0.8em; color: #888; text-transform: uppercase; }
+
+        button {
+            padding: 15px 30px;
+            font-size: 1em;
+            background: #e74c3c;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            cursor: pointer;
         }
     </style>
 </head>
 <body>
-    
-    <div id="error-log"></div>
 
-    <div id="loader-inicial">
-        <img src="icon-515.png" alt="Moto Conchas" class="logo-loading">
-        <div style="border: 3px solid #333; border-top: 3px solid #f1c40f; border-radius: 50%; width: 30px; height: 30px; animation: spin 1s infinite; margin-top: 30px;"></div>
-        <p style="color:white; margin-top:15px; font-size:0.9rem; opacity:0.7;">Version 1.1</p>
+    <button id="startBtn">ATIVAR SENSORES</button>
+
+    <div id="horizon-container">
+        <div id="sky"></div>
+        <div id="aircraft-indicator"></div>
     </div>
 
-    <button id="menuBtn" class="menu-btn" onclick="toggleMenu()">☰</button>
-    <div class="overlay" id="overlay" onclick="toggleMenu()"></div>
-    
-    <div class="sidebar" id="sidebar">
-        <div class="sidebar-header">
-            <div class="user-avatar">👤</div>
-            <h3 id="menuNome">Olá</h3>
-            <p id="menuEmail"></p>
+    <div id="data-panel">
+        <div class="data-box">
+            <div id="speed" class="value">0</div>
+            <div class="label">Velocidade (km/h)</div>
         </div>
-        <div class="menu-items">
-            <div class="menu-item" onclick="abrirMinhaConta()">👤 Minha Conta</div>
-            <div class="menu-item" onclick="abrirHistorico()">🕒 Histórico</div>
-            <div class="menu-item" onclick="sair()" style="color:red; margin-top:20px;">🚪 Sair</div>
+        <div class="data-box">
+            <div id="altitude" class="value">---</div>
+            <div class="label">Altitude (m)</div>
         </div>
-    </div>
-    
-    <div id="modal-conta" class="modal-full">
-        <div class="modal-header">
-            <button class="back-btn" onclick="fecharModal('modal-conta')">←</button>
-            <h2>Minha Conta</h2>
+        <div class="data-box">
+            <div id="pitch" class="value">0°</div>
+            <div class="label">Inclinação (Subida/Descida)</div>
         </div>
-        <label>Nome</label>
-        <div class="input-group"><input type="text" id="perfilNome" class="input-app" readonly></div>
-        <label>E-mail</label>
-        <div class="input-group"><input type="text" id="perfilEmail" class="input-app" readonly></div>
-        <label>Telefone</label>
-        <div class="input-group"><input type="text" id="perfilTel" class="input-app" readonly></div>
-    </div>
-
-    <div id="modal-historico" class="modal-full">
-        <div class="modal-header">
-            <button class="back-btn" onclick="fecharModal('modal-historico')">←</button>
-            <h2>Histórico</h2>
-        </div>
-        <div id="lista-historico"></div>
-    </div>
-
-    <div id="avaliacao-modal" class="modal-full" style="display:none; justify-content:center; align-items:center; background:rgba(0,0,0,0.9); z-index: 7000;">
-        <div style="background:white; padding:30px; border-radius:15px; text-align:center; width:90%;">
-            <h3>Como foi sua corrida?</h3>
-            <p style="color:#666; margin-bottom:20px;">Avalie o motorista</p>
-            <div style="font-size:40px; margin-bottom:20px; cursor:pointer;">
-                <span onclick="setEstrela(1)">⭐</span>
-                <span onclick="setEstrela(2)">⭐</span>
-                <span onclick="setEstrela(3)">⭐</span>
-                <span onclick="setEstrela(4)">⭐</span>
-                <span onclick="setEstrela(5)">⭐</span>
-            </div>
-            <p id="nota-selecionada" style="font-weight:bold; color:#f1c40f;">0 Estrelas</p>
-            <button class="btn-black" onclick="enviarAvaliacao()">ENVIAR AVALIAÇÃO</button>
+        <div class="data-box">
+            <div id="roll" class="value">0°</div>
+            <div class="label">Curva (Graus)</div>
         </div>
     </div>
-
-    <div id="map"></div>
-
-    <div id="auth-container">
-        
-        <div id="form-login" class="auth-card">
-            <h1>Moto Conchas</h1>
-            <p style="color:#666; margin-bottom:20px;">Entre para chamar sua moto</p>
-            
-            <input type="email" id="loginEmail" class="input-box" placeholder="E-mail">
-            <input type="password" id="loginSenha" class="input-box" placeholder="Senha">
-            
-            <button class="btn-black" onclick="fazerLogin()">ENTRAR</button>
-            <div style="margin-top:15px;">
-                <span>Não tem conta?</span>
-                <span class="link-text" onclick="alternarAuth('cadastro')">CRIAR CONTA AGORA</span>
-            </div>
-        </div>
-
-        <div id="form-cadastro" class="auth-card hidden">
-            <h2>Criar Nova Conta</h2>
-            <p style="color:#666; margin-bottom:20px;">Preencha seus dados</p>
-            
-            <input type="text" id="cadNome" class="input-box" placeholder="Nome Completo">
-            <input type="number" id="cadCPF" class="input-box" placeholder="CPF (Somente números)">
-            <input type="tel" id="cadTel" class="input-box" placeholder="Telefone / WhatsApp">
-            <input type="email" id="cadEmail" class="input-box" placeholder="E-mail">
-            <input type="password" id="cadSenha" class="input-box" placeholder="Senha (Mín 6 dígitos)">
-            
-            <button class="btn-black" onclick="cadastrarUsuario()">CADASTRAR</button>
-            <span class="link-text" onclick="alternarAuth('login')">Voltar para Login</span>
-        </div>
-
-    </div>
-
-    <div id="chat-modal" class="chat-modal">
-        <div class="chat-header">
-            <span>Conversa com Motorista</span>
-            <button onclick="toggleChat()" style="background:none; border:none; color:white; font-size:20px;">✕</button>
-        </div>
-        <div id="chat-msgs" class="chat-body"></div>
-        <div class="chat-footer">
-            <input type="text" id="chatInput" class="chat-input" placeholder="Digite uma mensagem...">
-            <button class="chat-send" onclick="enviarMensagem()">➤</button>
-        </div>
-    </div>
-
-    <div class="bottom-sheet" id="painel-app">
-        
-        <div id="tela-rota">
-            <h4 style="margin-bottom:15px;">Para onde vamos?</h4>
-            
-            <div class="input-group" id="grupoOrigem">
-                <div class="dot dot-blue"></div>
-                <input type="text" id="origemInput" class="input-app" placeholder="Seu local (ou use GPS)" oninput="buscarEndereco(this.value, 'origem')">
-            </div>
-            
-            <div class="input-group" id="grupoDestino">
-                <div class="dot dot-red"></div>
-                <input type="text" id="destinoInput" class="input-app" placeholder="Digite o destino... (Ex: Rodoviária)" oninput="buscarEndereco(this.value, 'destino')">
-            </div>
-            
-            <div id="listaSugestoes" class="suggestions-box"></div>
-            
-            <div style="display:flex; justify-content:space-between; margin:15px 0; padding:10px; background:#f9f9f9; border-radius:10px;">
-                <span>Moto (Fixo)</span><span style="color:#2ecc71; font-weight:bold;">R$ 7,00</span>
-            </div>
-            <button class="btn-black" onclick="irParaPagamento()">CHAMAR MOTO</button>
-        </div>
-
-        <div id="tela-pix" class="hidden" style="text-align:center;">
-            <h3>Pagamento PIX</h3>
-            <div id="loadingPix" class="loader"></div>
-            <div id="areaQrCode" class="hidden">
-                <img id="imgQr" style="width:160px; margin:10px auto; display:block;" src="" />
-                <textarea id="copiaCola" style="width:100%; border:1px solid #ddd; height:40px;" readonly></textarea>
-                <button class="btn-black" style="background:#32bcad; margin-top:5px;" onclick="copiar()">COPIAR CÓDIGO</button>
-            </div>
-            <button onclick="voltarRota()" style="color:red; background:none; border:none; margin-top:15px;">Cancelar</button>
-        </div>
-
-        <div id="tela-aguarde" class="hidden" style="text-align:center;">
-            <div style="background:#2ecc71; width:50px; height:50px; border-radius:50%; display:flex; align-items:center; justify-content:center; margin:0 auto;">✓</div>
-            <h3 style="margin-top:10px;">Status da Corrida</h3>
-            <h1 id="tempoEstimado" style="font-size:2rem; margin:10px 0;">-- min</h1>
-            <p id="statusTexto" style="color:#666;">Aguardando motorista...</p>
-            <hr style="margin:20px 0; border:0; border-top:1px solid #eee;">
-            
-            <button id="btnChat" class="btn-black hidden" style="background:#3498db; margin-bottom:10px;" onclick="toggleChat()">💬 Falar com Motorista</button>
-            
-            <button class="btn-black" style="background:#e74c3c;" onclick="alert('Contate o suporte')">Suporte</button>
-        </div>
-    </div>
-
-    <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-functions-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-messaging-compat.js"></script>
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <script src="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.js"></script>
-    
-    <script src="firebase-config.js"></script>
 
     <script>
-        // TRATAMENTO DE ERROS GLOBAL
-        window.onerror = function(msg, url, line) {
-            const errDiv = document.getElementById('error-log');
-            errDiv.style.display = 'block';
-            errDiv.innerHTML += `Erro: ${msg} (Linha ${line})<br>`;
-            document.getElementById('loader-inicial').style.display = 'none';
-            document.getElementById('auth-container').style.display = 'flex';
-            return false;
-        };
+        const sky = document.getElementById('sky');
+        const startBtn = document.getElementById('startBtn');
+        const speedEl = document.getElementById('speed');
+        const altitudeEl = document.getElementById('altitude');
+        const pitchEl = document.getElementById('pitch');
+        const rollEl = document.getElementById('roll');
 
-        const CENTRO_CONCHAS = { lat: -23.0134, lng: -48.0089 };
-        const RAIO_MAXIMO_KM = 5;
-
-        // INICIALIZAÇÃO SEGURA
-        let messaging = null;
-        try {
-            if (firebase.messaging.isSupported()) {
-                messaging = firebase.messaging();
-            }
-        } catch (e) { console.log("Msg off"); }
-
-        // MAPA
-        const map = L.map('map', {zoomControl: false}).setView([CENTRO_CONCHAS.lat, CENTRO_CONCHAS.lng], 14);
-        L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', { maxZoom: 20 }).addTo(map);
-        L.circle([CENTRO_CONCHAS.lat, CENTRO_CONCHAS.lng], { color: '#3498db', fillOpacity: 0.05, radius: RAIO_MAXIMO_KM * 1000 }).addTo(map);
-
-        const iconOrigem = L.divIcon({ className: 'custom-pin', html: '<div style="background:#3498db; width:16px; height:16px; border:3px solid white; border-radius:50%; box-shadow:0 3px 10px rgba(0,0,0,0.4);"></div>', iconSize: [20, 20] });
-        const iconDestino = L.divIcon({ className: 'custom-pin', html: '<div style="background:#e74c3c; width:16px; height:16px; border:3px solid white; border-radius:50%; box-shadow:0 3px 10px rgba(0,0,0,0.4);"></div>', iconSize: [20, 20] });
-        const iconMoto = L.icon({ iconUrl: 'https://cdn-icons-png.flaticon.com/512/1986/1986937.png', iconSize: [40, 40], iconAnchor: [20, 20] });
-
-        let markerOrigem, markerDestino, markerMoto, rotaControl, coordsOrigem, coordsDestino, userAtual, corridaAtualID = null;
-        let notaAtual = 0; 
-
-        // TRAVA DE SAÍDA
-        window.onbeforeunload = function() {
-            if (corridaAtualID) return "Você tem uma corrida ativa!";
-        };
-
-        // --- SISTEMA ANTI-TRAVAMENTO (4 SEGUNDOS) ---
-        setTimeout(() => {
-            const loader = document.getElementById('loader-inicial');
-            if(loader && loader.style.display !== 'none') {
-                console.log("Loader forçado a sair.");
-                loader.style.display = 'none';
-                if(!userAtual) document.getElementById('auth-container').style.display = 'flex';
-            }
-        }, 4000);
-
-        // AUTH
-        firebase.auth().onAuthStateChanged(async user => {
-            document.getElementById('loader-inicial').style.display = 'none'; // Some assim que carrega
-
-            if (user) {
-                userAtual = user;
-                document.getElementById('auth-container').style.display = 'none';
-                document.getElementById('map').style.display = 'block';
-                document.getElementById('painel-app').style.display = 'block';
-                document.getElementById('menuBtn').style.display = 'flex';
-                map.invalidateSize(); 
-                iniciarGPS();
-
-                // Carrega dados usuário (sem travar se falhar)
-                firebase.firestore().collection('users').doc(user.uid).get().then(doc => {
-                    const dados = doc.exists ? doc.data() : {};
-                    document.getElementById('menuNome').innerText = dados.nome || "Usuário";
-                    document.getElementById('menuEmail').innerText = user.email;
-                    document.getElementById('perfilNome').value = dados.nome || "";
-                    document.getElementById('perfilEmail').value = user.email;
-                    document.getElementById('perfilTel').value = dados.telefone || "";
-                }).catch(()=>{});
-                
-                verificarCorridaAtiva(user.uid);
-                if(messaging) configurarNotificacoes(user.uid);
-                iniciarRastreadorOnline(user.uid); 
-            } else {
-                document.getElementById('map').style.display = 'none';
-                document.getElementById('painel-app').style.display = 'none';
-                document.getElementById('menuBtn').style.display = 'none';
-                document.getElementById('auth-container').style.display = 'flex';
-            }
-        });
-
-        // --- RASTREADOR DE PRESENÇA (PASSAGEIRO) ---
-        function iniciarRastreadorOnline(uid) {
-            const atualizar = () => {
-                firebase.firestore().collection('users').doc(uid).set({
-                    ultimo_visto: firebase.firestore.FieldValue.serverTimestamp(),
-                    tipo_usuario: 'passageiro',
-                    online_agora: true
-                }, { merge: true }).catch(()=>{}); 
-            };
-            atualizar(); 
-            setInterval(atualizar, 60000); 
-        }
-
-        // --- SISTEMA DE AVALIAÇÃO ---
-        function abrirAvaliacao() {
-            document.getElementById('avaliacao-modal').style.display = 'flex';
-        }
-
-        function setEstrela(n) {
-            notaAtual = n;
-            document.getElementById('nota-selecionada').innerText = n + " Estrelas";
-        }
-
-        function enviarAvaliacao() {
-            if(notaAtual === 0) return alert("Selecione uma nota!");
-            
-            firebase.firestore().collection('corridas').doc(corridaAtualID || "temp").get().then(doc => {
-                if(doc.exists) {
-                    const dados = doc.data();
-                    if(dados.motoristaId) {
-                        firebase.firestore().collection('users').doc(dados.motoristaId).collection('avaliacoes').add({
-                            nota: notaAtual,
-                            avaliador: firebase.auth().currentUser.uid,
-                            data: firebase.firestore.FieldValue.serverTimestamp()
-                        });
-                    }
-                }
-                alert("Obrigado pela avaliação!");
-                location.reload();
-            }).catch(() => {
-                location.reload();
-            });
-        }
-
-        // --- NOTIFICAÇÕES ---
-        function configurarNotificacoes(uid) {
-            Notification.requestPermission().then(permission => {
-                if (permission === 'granted' && messaging) {
-                    messaging.getToken({ vapidKey: "BN8AZa8hMQBabhaTW-9rNXjLX2-wpBjG-lNpsCl82fuWcjyUtVCvCBJFYUUVmSVD-L0a3OuJWY3fRtaTpo7qGE0" }).then((currentToken) => {
-                        if (currentToken) {
-                            firebase.firestore().collection('users').doc(uid).update({ fcmToken: currentToken });
+        // Solicitar permissão para iOS 13+ e sensores
+        startBtn.onclick = () => {
+            if (typeof DeviceOrientationEvent.requestPermission === 'function') {
+                DeviceOrientationEvent.requestPermission()
+                    .then(permissionState => {
+                        if (permissionState === 'granted') {
+                            window.addEventListener('deviceorientation', updateOrientation);
+                            startGPS();
+                            startBtn.style.display = 'none';
                         }
-                    }).catch(()=>{});
-                }
-            });
-        }
-
-        function dispararNotificacaoLocal(titulo, corpo) {
-            if (Notification.permission === 'granted') {
-                new Notification(titulo, {
-                    body: corpo,
-                    icon: 'https://cdn-icons-png.flaticon.com/512/1986/1986937.png',
-                    vibrate: [200, 100, 200]
-                });
-            }
-        }
-
-        // --- LOGIN E CADASTRO ---
-        function alternarAuth(tela) {
-            if(tela === 'cadastro') {
-                document.getElementById('form-login').classList.add('hidden');
-                document.getElementById('form-cadastro').classList.remove('hidden');
+                    })
+                    .catch(console.error);
             } else {
-                document.getElementById('form-cadastro').classList.add('hidden');
-                document.getElementById('form-login').classList.remove('hidden');
+                window.addEventListener('deviceorientation', updateOrientation);
+                startGPS();
+                startBtn.style.display = 'none';
             }
+        };
+
+        function updateOrientation(event) {
+            // Beta: Inclinação frente/trás (Pitch) | Gamma: Inclinação lateral (Roll)
+            let pitch = Math.round(event.beta); 
+            let roll = Math.round(event.gamma);
+
+            pitchEl.innerText = pitch + "°";
+            rollEl.innerText = roll + "°";
+
+            // Move o "céu" de acordo com a moto
+            // Ajustamos o multiplicador para dar sensibilidade
+            sky.style.transform = `rotate(${-roll}deg) translateY(${pitch * 2}px)`;
         }
 
-        function fazerLogin() {
-            const email = document.getElementById('loginEmail').value;
-            const senha = document.getElementById('loginSenha').value;
-            if(!email || !senha) return alert("Preencha todos os campos");
-            
-            const btn = event.target; 
-            btn.innerText = "Entrando...";
-            btn.disabled = true;
-
-            firebase.auth().signInWithEmailAndPassword(email, senha)
-            .catch(err => {
-                btn.innerText = "ENTRAR";
-                btn.disabled = false;
-                alert("Erro: " + err.message);
-            });
-        }
-
-        function cadastrarUsuario() {
-            const nome = document.getElementById('cadNome').value;
-            const cpf = document.getElementById('cadCPF').value;
-            const tel = document.getElementById('cadTel').value;
-            const email = document.getElementById('cadEmail').value;
-            const senha = document.getElementById('cadSenha').value;
-
-            if(!nome || !cpf || !tel || !email || !senha) return alert("Preencha TODOS os campos!");
-            if(senha.length < 6) return alert("A senha deve ter no mínimo 6 dígitos.");
-
-            firebase.auth().createUserWithEmailAndPassword(email, senha)
-                .then(u => {
-                    firebase.firestore().collection('users').doc(u.user.uid).set({
-                        nome: nome,
-                        cpf: cpf,
-                        telefone: tel,
-                        email: email,
-                        criadoEm: firebase.firestore.FieldValue.serverTimestamp()
-                    });
-                    alert("Conta criada com sucesso!");
-                })
-                .catch(err => {
-                    alert("Erro ao criar conta: " + err.message);
-                });
-        }
-
-        // --- CHAT ---
-        function toggleChat() {
-            document.getElementById('chat-modal').classList.toggle('open');
-        }
-
-        function enviarMensagem() {
-            const input = document.getElementById('chatInput');
-            const texto = input.value.trim();
-            if(!texto || !corridaAtualID) return;
-
-            firebase.firestore().collection('corridas').doc(corridaAtualID).collection('mensagens').add({
-                texto: texto,
-                remetente: 'passageiro',
-                data: firebase.firestore.FieldValue.serverTimestamp()
-            });
-            input.value = "";
-        }
-
-        function monitorarChat(id) {
-            firebase.firestore().collection('corridas').doc(id).collection('mensagens')
-                .orderBy('data', 'asc')
-                .onSnapshot(snap => {
-                    const div = document.getElementById('chat-msgs');
-                    div.innerHTML = "";
-                    snap.forEach(doc => {
-                        const msg = doc.data();
-                        const classe = msg.remetente === 'passageiro' ? 'msg-me' : 'msg-other';
-                        div.innerHTML += `<div class="msg ${classe}">${msg.texto}</div>`;
-                    });
-                    div.scrollTop = div.scrollHeight;
-                });
-        }
-
-        // --- BUSCA DE ENDEREÇO ---
-        let debounceTimer;
-        function buscarEndereco(txt, tipo) {
-            clearTimeout(debounceTimer);
-            const box = document.getElementById('listaSugestoes');
-            
-            if(txt.length < 3) { box.style.display='none'; return; }
-            
-            debounceTimer = setTimeout(async () => {
-                const txtBusca = `${txt}, Conchas, SP`;
-                const url = `https://nominatim.openstreetmap.org/search?format=json&addressdetails=1&q=${encodeURIComponent(txtBusca)}&limit=5&countrycodes=br&viewbox=-48.15,-22.90,-47.90,-23.15&bounded=1`;
-                try {
-                    const res = await fetch(url);
-                    const data = await res.json();
-                    box.innerHTML = "";
+        function startGPS() {
+            if ("geolocation" in navigator) {
+                navigator.geolocation.watchPosition((position) => {
+                    const speed = position.coords.speed ? Math.round(position.coords.speed * 3.6) : 0;
+                    const altitude = position.coords.altitude ? Math.round(position.coords.altitude) : "---";
                     
-                    const resultadosFiltrados = data.filter(item => {
-                        const lat = parseFloat(item.lat);
-                        const isPerto = lat < -22.90 && lat > -23.15; 
-                        return isPerto;
-                    });
-
-                    if(resultadosFiltrados.length > 0) {
-                        box.style.display = 'block';
-                        resultadosFiltrados.forEach(l => {
-                            const div = document.createElement('div');
-                            div.className = 'suggestion-item';
-                            
-                            let titulo = l.name || l.address.road || l.display_name.split(',')[0];
-                            let detalhes = "";
-
-                            if(l.address.road && titulo !== l.address.road) detalhes += l.address.road;
-                            if(l.address.house_number) detalhes += `, ${l.address.house_number}`;
-                            if(l.address.suburb) detalhes += ` - ${l.address.suburb}`;
-                            if(!detalhes) detalhes = l.address.city || l.address.town || "Conchas";
-
-                            div.innerHTML = `
-                                <div style="font-weight:bold; color:#000;">📍 ${titulo}</div>
-                                <div style="font-size:0.8rem; color:#666;">${detalhes}</div>
-                            `;
-                            
-                            div.onclick = () => selecionarLocal(l, tipo, `${titulo} (${detalhes})`);
-                            box.appendChild(div);
-                        });
-                    } else box.style.display = 'none';
-                } catch(e) { console.error(e); }
-            }, 500);
-        }
-
-        function selecionarLocal(dados, tipo, nomeFormatado) {
-            const box = document.getElementById('listaSugestoes');
-            const lat = parseFloat(dados.lat);
-            const lng = parseFloat(dados.lon);
-            const coords = { lat, lng };
-
-            if(tipo === 'origem') {
-                document.getElementById('origemInput').value = nomeFormatado;
-                coordsOrigem = coords;
-                if(markerOrigem) map.removeLayer(markerOrigem);
-                markerOrigem = L.marker([lat, lng], { draggable: true, icon: iconOrigem }).addTo(map);
-                markerOrigem.on('dragend', function(e) {
-                    const p = markerOrigem.getLatLng();
-                    coordsOrigem = { lat: p.lat, lng: p.lng };
-                    obterEndereco(p.lat, p.lng, 'origemInput');
-                    atualizarLinhaRota();
+                    speedEl.innerText = speed;
+                    altitudeEl.innerText = altitude;
+                }, (err) => console.log(err), {
+                    enableHighAccuracy: true
                 });
-                map.setView([lat, lng], 16);
-            } else {
-                document.getElementById('destinoInput').value = nomeFormatado;
-                coordsDestino = coords;
-                if(markerDestino) map.removeLayer(markerDestino);
-                markerDestino = L.marker([lat, lng], { icon: iconDestino }).addTo(map);
-            }
-
-            box.style.display = 'none';
-            atualizarLinhaRota();
-        }
-
-        async function obterEndereco(lat, lng, el) {
-            try {
-                const r = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`);
-                const d = await r.json();
-                let texto = d.address.road || d.address.pedestrian || d.name || "Local sem nome";
-                if (d.address.house_number) texto += `, ${d.address.house_number}`;
-                else texto += ` (Aprox.)`;
-                if (d.address.suburb) texto += ` - ${d.address.suburb}`;
-                document.getElementById(el).value = texto;
-            } catch(e){
-                document.getElementById(el).value = "Local no Mapa (GPS)";
             }
         }
-
-        // --- ESTADO E APP ---
-        async function verificarCorridaAtiva(uid) {
-            const idSalvo = localStorage.getItem('passageiroCorridaID');
-            if(idSalvo) {
-                restaurarEstado(idSalvo);
-            } else {
-                try {
-                    const snapshot = await firebase.firestore().collection('corridas').where('uid', '==', uid).orderBy('data', 'desc').limit(1).get();
-                    if (!snapshot.empty) {
-                        const doc = snapshot.docs[0];
-                        const data = doc.data();
-                        if (['pendente', 'aceito', 'aguardando_pagamento', 'aguardando_passageiro', 'em_viagem'].includes(data.status)) {
-                            localStorage.setItem('passageiroCorridaID', doc.id);
-                            restaurarEstado(doc.id, data);
-                        }
-                    }
-                } catch (e) { }
-            }
-        }
-
-        async function restaurarEstado(id, dadosJaCarregados) {
-            let data = dadosJaCarregados;
-            if(!data) {
-                const doc = await firebase.firestore().collection('corridas').doc(id).get();
-                if(!doc.exists) {
-                    localStorage.removeItem('passageiroCorridaID');
-                    return;
-                }
-                data = doc.data();
-            }
-            
-            if(data.origem && data.origem.lat) {
-                coordsOrigem = data.origem;
-                document.getElementById('origemInput').value = "Origem Definida";
-                if(markerOrigem) map.removeLayer(markerOrigem);
-                markerOrigem = L.marker([coordsOrigem.lat, coordsOrigem.lng], { draggable: false, icon: iconOrigem }).addTo(map);
-                map.setView([coordsOrigem.lat, coordsOrigem.lng], 16);
-            }
-            if(data.destinoCoords && data.destinoCoords.lat) {
-                coordsDestino = data.destinoCoords;
-                document.getElementById('destinoInput').value = data.destino;
-                if(markerDestino) map.removeLayer(markerDestino);
-                markerDestino = L.marker([coordsDestino.lat, coordsDestino.lng], { icon: iconDestino }).addTo(map);
-                atualizarLinhaRota();
-            }
-
-            if (data.status !== 'aguardando_pagamento') {
-                corridaAtualID = id;
-                monitorarCorrida(id);
-                if(data.status !== 'pendente') {
-                    monitorarChat(id);
-                    document.getElementById('btnChat').classList.remove('hidden');
-                }
-                bloquearEdicao();
-                document.getElementById('tela-rota').classList.add('hidden');
-                document.getElementById('tela-pix').classList.add('hidden');
-                document.getElementById('tela-aguarde').classList.remove('hidden');
-            }
-        }
-
-        // --- AÇÃO E PAGAMENTO ---
-        async function irParaPagamento() {
-            if(!coordsOrigem || !coordsDestino) return alert("Defina o destino.");
-            const d1 = calcularDistanciaKm(coordsOrigem.lat, coordsOrigem.lng, CENTRO_CONCHAS.lat, CENTRO_CONCHAS.lng);
-            const d2 = calcularDistanciaKm(coordsDestino.lat, coordsDestino.lng, CENTRO_CONCHAS.lat, CENTRO_CONCHAS.lng);
-            if(d1 > RAIO_MAXIMO_KM || d2 > RAIO_MAXIMO_KM) return alert("Fora da área de cobertura (5km).");
-
-            // --- VERIFICAÇÃO MOTORISTA ONLINE ---
-            try {
-                const check = await firebase.firestore().collection('users').where('isOnline', '==', true).limit(1).get();
-                if(check.empty) {
-                    return alert("🚫 Nenhum motorista online agora.\nTente mais tarde!");
-                }
-            } catch(e) { console.error("Erro busca moto:", e); }
-
-            document.getElementById('tela-rota').classList.add('hidden');
-            document.getElementById('tela-pix').classList.remove('hidden');
-
-            try {
-                const docRef = await firebase.firestore().collection("corridas").add({
-                    uid: userAtual.uid, passageiro: userAtual.displayName || "Cliente",
-                    origem: coordsOrigem, destino: document.getElementById('destinoInput').value,
-                    destinoCoords: coordsDestino, valor: "R$ 7,00", status: "aguardando_pagamento", data: firebase.firestore.FieldValue.serverTimestamp()
-                });
-                
-                localStorage.setItem('passageiroCorridaID', docRef.id);
-                
-                const func = firebase.functions().httpsCallable('gerarPix');
-                const resp = await func({ email: userAtual.email, nome: "Cliente" });
-                
-                document.getElementById('loadingPix').classList.add('hidden');
-                document.getElementById('areaQrCode').classList.remove('hidden');
-                document.getElementById('imgQr').src = `data:image/jpeg;base64,${resp.data.qr_code_base64}`;
-                document.getElementById('copiaCola').value = resp.data.qr_code;
-
-                await firebase.firestore().collection("corridas").doc(docRef.id).update({ id_pagamento: resp.data.id_pagamento });
-                
-                const unsub = firebase.firestore().collection("corridas").doc(docRef.id).onSnapshot(s => {
-                    if(s.data().status === 'pendente') {
-                        document.getElementById('tela-pix').classList.add('hidden');
-                        document.getElementById('tela-aguarde').classList.remove('hidden');
-                        corridaAtualID = docRef.id;
-                        monitorarCorrida(docRef.id);
-                        bloquearEdicao();
-                        unsub(); 
-                    }
-                });
-            } catch (e) { alert(e.message); voltarRota(); }
-        }
-
-        function monitorarCorrida(id) {
-            firebase.firestore().collection("corridas").doc(id).onSnapshot(s => {
-                if(!s.exists) return;
-                const d = s.data();
-                const statusTxt = document.getElementById('statusTexto');
-                const tempoTxt = document.getElementById('tempoEstimado');
-                
-                if(d.status === 'pendente') {
-                    statusTxt.innerText = "Procurando motorista...";
-                    tempoTxt.innerText = "-- min";
-                } else if(d.status === 'aceito') {
-                    statusTxt.innerText = "Motorista indo até você!";
-                    statusTxt.style.color = "#2ecc71";
-                    if(d.motoristaLat && d.motoristaLng) {
-                        atualizarPosicaoMoto(d.motoristaLat, d.motoristaLng, coordsOrigem, d.motoristaSpeed);
-                    }
-                    dispararNotificacaoLocal("Motorista Aceitou!", "Seu motorista está a caminho.");
-                    monitorarChat(id);
-                    document.getElementById('btnChat').classList.remove('hidden');
-
-                } else if(d.status === 'aguardando_passageiro') {
-                    statusTxt.innerText = "Motorista CHEGOU!";
-                    statusTxt.style.color = "#f1c40f";
-                    tempoTxt.innerText = "Chegou";
-                    if(navigator.vibrate) navigator.vibrate([200, 100, 200]);
-                    dispararNotificacaoLocal("Motorista Chegou!", "Encontre seu motorista no local.");
-
-                } else if(d.status === 'em_viagem') {
-                    statusTxt.innerText = "Em viagem ao destino";
-                    statusTxt.style.color = "#3498db";
-                    tempoTxt.innerText = "Boa viagem";
-                } else if(d.status === 'finalizado') {
-                    corridaAtualID = null; 
-                    localStorage.removeItem('passageiroCorridaID');
-                    alert("Corrida finalizada! Obrigado.");
-                    location.reload(); 
-                }
-            });
-        }
-
-        function atualizarPosicaoMoto(lat, lng, destinoCoords, speedMs) {
-            if(!markerMoto) { markerMoto = L.marker([lat, lng], {icon: iconMoto}).addTo(map); } else { markerMoto.setLatLng([lat, lng]); }
-            if(destinoCoords) {
-                const distKm = calcularDistanciaKm(lat, lng, destinoCoords.lat, destinoCoords.lng);
-                let speedKmh = (speedMs || 0) * 3.6;
-                const velocidadeCalculo = (speedKmh < 5) ? 35 : speedKmh;
-                const horas = distKm / velocidadeCalculo;
-                const minutos = Math.ceil(horas * 60);
-                document.getElementById('tempoEstimado').innerText = `${minutos} min`;
-                const textoVel = (speedKmh < 5) ? "" : ` • ${Math.round(speedKmh)} km/h`;
-                document.getElementById('statusTexto').innerText = `Distância: ${distKm.toFixed(1)}km${textoVel}`;
-            }
-        }
-
-        function iniciarGPS() {
-            if(corridaAtualID || coordsOrigem) return; 
-            navigator.geolocation.getCurrentPosition(pos => {
-                const lat = pos.coords.latitude; const lng = pos.coords.longitude;
-                if(!coordsOrigem) {
-                    coordsOrigem = { lat, lng };
-                    map.setView([lat, lng], 16);
-                    markerOrigem = L.marker([lat, lng], { draggable: true, icon: iconOrigem }).addTo(map);
-                    obterEndereco(lat, lng, 'origemInput');
-                    markerOrigem.on('dragend', function(e) {
-                        const p = markerOrigem.getLatLng();
-                        coordsOrigem = { lat: p.lat, lng: p.lng };
-                        obterEndereco(p.lat, p.lng, 'origemInput');
-                        atualizarLinhaRota();
-                    });
-                }
-            });
-        }
-
-        function atualizarLinhaRota() {
-            if(!coordsOrigem || !coordsDestino) return;
-            if(rotaControl) map.removeControl(rotaControl);
-            rotaControl = L.Routing.control({
-                waypoints: [L.latLng(coordsOrigem), L.latLng(coordsDestino)],
-                router: L.Routing.osrmv1({ serviceUrl: 'https://router.project-osrm.org/route/v1', profile: 'driving' }),
-                lineOptions: { styles: [{color: 'black', opacity: 0.8, weight: 5}] },
-                createMarker: () => null, addWaypoints: false, draggableWaypoints: false, fitSelectedRoutes: true, containerClassName: 'hidden'
-            }).addTo(map);
-        }
-
-        function calcularDistanciaKm(lat1, lon1, lat2, lon2) {
-            const R = 6371; const p = Math.PI / 180;
-            const a = 0.5 - Math.cos((lat2 - lat1) * p)/2 + Math.cos(lat1 * p) * Math.cos(lat2 * p) * (1 - Math.cos((lon2 - lon1) * p))/2;
-            return 12742 * Math.asin(Math.sqrt(a));
-        }
-
-        function bloquearEdicao() {
-            if(markerOrigem && markerOrigem.dragging) markerOrigem.dragging.disable();
-            document.getElementById('origemInput').disabled = true; 
-            document.getElementById('grupoOrigem').classList.add('disabled');
-            document.getElementById('destinoInput').disabled = true;
-            document.getElementById('grupoDestino').classList.add('disabled');
-            document.getElementById('listaSugestoes').style.display = 'none';
-        }
-
-        function voltarRota() { document.getElementById('tela-pix').classList.add('hidden'); document.getElementById('tela-rota').classList.remove('hidden'); }
-        function copiar() { navigator.clipboard.writeText(document.getElementById('copiaCola').value); alert("Copiado!"); }
-        function toggleMenu() { document.getElementById('sidebar').classList.toggle('open'); document.getElementById('overlay').style.display = (document.getElementById('overlay').style.display === 'block') ? 'none' : 'block'; }
-        function abrirMinhaConta() { document.getElementById('modal-conta').style.display = 'block'; toggleMenu(); }
-        function abrirHistorico() { document.getElementById('modal-historico').style.display = 'block'; toggleMenu(); document.getElementById('lista-historico').innerHTML = "Carregando..."; firebase.firestore().collection('corridas').where('uid', '==', userAtual.uid).orderBy('data', 'desc').limit(10).get().then(s => { document.getElementById('lista-historico').innerHTML = ""; s.forEach(d => { const dd=d.data(); document.getElementById('lista-historico').innerHTML += `<div class="history-card"><b>${dd.destino}</b><br><small>${dd.status}</small></div>`; }) }); }
-        function fecharModal(id) { document.getElementById(id).style.display = 'none'; }
-        function sair() { firebase.auth().signOut(); location.reload(); }
     </script>
-    
-    <a href="https://wa.me/5514981722063?text=Preciso%20de%20ajuda%20no%20MotoApp" 
-       target="_blank"
-       style="position:fixed; bottom:100px; right:20px; z-index:2000; background:#25D366; color:white; width:50px; height:50px; border-radius:50%; display:flex; align-items:center; justify-content:center; box-shadow:0 4px 10px rgba(0,0,0,0.3); text-decoration:none; font-size:24px;">
-       📞
-    </a>
 </body>
 </html>
