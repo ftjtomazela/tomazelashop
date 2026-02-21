@@ -3,161 +3,92 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Moto Horizon - Radar Realtime</title>
+    <title>Moto Horizon Fix</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
-        body { margin: 0; background: #000; color: #fff; font-family: sans-serif; overflow: hidden; }
-        #map { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; }
-        
-        /* Overlay de Alerta */
-        #flash { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 999; pointer-events: none; opacity: 0; background: #ffcc00; }
-
-        /* HUD - Elementos Flutuantes */
-        #ui { position: relative; z-index: 10; height: 100vh; display: flex; flex-direction: column; justify-content: space-between; pointer-events: none; }
-        
-        /* Horizonte Artificial */
-        #horizon { width: 110px; height: 110px; border-radius: 50%; border: 2px solid #444; position: absolute; top: 15px; left: 15px; overflow: hidden; background: #1a2a3a; box-shadow: 0 0 15px #000; }
-        #sky { position: absolute; width: 250%; height: 250%; top: -75%; left: -75%; background: linear-gradient(to bottom, #2980b9 50%, #5d3a1a 50%); transition: transform 0.05s linear; }
-
-        /* Painel de Postos */
-        #stations { position: absolute; top: 15px; right: 15px; width: 170px; background: rgba(0,0,0,0.85); border: 1px solid #333; border-radius: 10px; padding: 10px; font-size: 11px; }
-        .st-item { border-bottom: 1px solid #222; padding: 6px 0; }
-        .st-item b { color: #00ff00; display: block; }
-
-        /* Dashboard Inferior */
-        #dash { background: rgba(0,0,0,0.9); padding: 15px; display: grid; grid-template-columns: repeat(4, 1fr); text-align: center; border-top: 1px solid #333; }
-        .v { font-size: 1.6rem; font-weight: bold; color: #00ff00; }
-        .l { font-size: 0.6rem; color: #777; text-transform: uppercase; }
-
-        #start-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 1000; display: flex; flex-direction: column; justify-content: center; align-items: center; }
-        button { padding: 20px 40px; background: #00ff00; border: none; border-radius: 40px; font-weight: bold; cursor: pointer; color: #000; font-size: 1.1rem; }
+        body { margin: 0; background: #222; color: #fff; font-family: sans-serif; overflow: hidden; }
+        #map { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; background: #eee; }
+        #ui { position: relative; z-index: 10; height: 100vh; pointer-events: none; }
+        #horizon { width: 100px; height: 100px; border-radius: 50%; border: 2px solid #000; position: absolute; top: 10px; left: 10px; overflow: hidden; background: #1a2a3a; }
+        #sky { position: absolute; width: 250%; height: 250%; top: -75%; left: -75%; background: linear-gradient(to bottom, #2980b9 50%, #8b4513 50%); }
+        #stations { position: absolute; top: 10px; right: 10px; width: 180px; background: rgba(0,0,0,0.8); padding: 10px; border-radius: 10px; font-size: 11px; pointer-events: auto; }
+        #dash { position: absolute; bottom: 0; width: 100%; background: rgba(0,0,0,0.9); display: flex; justify-content: space-around; padding: 15px 0; border-top: 2px solid #00ff00; }
+        .v { font-size: 1.5rem; font-weight: bold; color: #00ff00; }
+        #start { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 1000; display: flex; justify-content: center; align-items: center; pointer-events: auto; }
+        button { padding: 20px; background: #00ff00; border: none; font-weight: bold; border-radius: 10px; }
     </style>
 </head>
 <body>
 
-    <div id="start-screen">
-        <h2 style="color:white; margin-bottom: 20px;">MOTO EXPEDITION PRO</h2>
-        <button onclick="iniciar()">ATIVAR RADAR E SENSORES</button>
+<div id="start"><button onclick="iniciar()">CLIQUE PARA ATIVAR TUDO</button></div>
+
+<div id="map"></div>
+
+<div id="ui">
+    <div id="horizon"><div id="sky"></div></div>
+    <div id="stations"><b>⛽ PRÓXIMOS POSTOS:</b><div id="list">Buscando postos...</div></div>
+    <div id="dash">
+        <div><span id="spd" class="v">0</span><br>KM/H</div>
+        <div><span id="wea" class="v">--</span><br>TEMPO</div>
     </div>
+</div>
 
-    <div id="flash"></div>
-    <div id="map"></div>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+    const KEY = "d0bd25d6a9954ce24084e7358c237204";
+    let map, user;
 
-    <div id="ui">
-        <div id="horizon">
-            <div id="sky"></div>
-            <div style="position:absolute; top:50%; left:15%; width:70%; height:2px; background:yellow; z-index:5;"></div>
-        </div>
+    function iniciar() {
+        document.getElementById('start').style.display = 'none';
+        
+        // Mapa base padrão (Não fica preto)
+        map = L.map('map', { zoomControl: false }).setView([0,0], 13);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+        
+        // Camada de Radar (Cores de chuva)
+        L.tileLayer('https://tilecache.rainviewer.com/v2/radar/nowcast_5/256/{z}/{x}/{y}/2/1_1.png', {
+            opacity: 0.6, zIndex: 100
+        }).addTo(map);
 
-        <div id="stations">
-            <div style="color:#00ff00; font-weight:bold; margin-bottom:5px; border-bottom:1px solid #444">⛽ POSTOS (30KM)</div>
-            <div id="list">Buscando...</div>
-        </div>
-
-        <div id="dash">
-            <div class="stat"><span id="spd" class="v">0</span><br><span class="l">km/h</span></div>
-            <div class="stat"><span id="alt" class="v">--</span><br><span class="l">Altitude</span></div>
-            <div class="stat"><span id="wea" class="v">--</span><br><span class="l">Clima</span></div>
-            <div class="stat"><span id="pit" class="v">0°</span><br><span class="l">Inclinação</span></div>
-        </div>
-    </div>
-
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <script>
-        const API_KEY = "d0bd25d6a9954ce24084e7358c237204";
-        let map, userMarker, audioCtx, lastCheck = 0;
-
-        function iniciar() {
-            document.getElementById('start-screen').style.display = 'none';
-            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        navigator.geolocation.watchPosition(p => {
+            const lat = p.coords.latitude;
+            const lon = p.coords.longitude;
+            map.setView([lat, lon]);
             
-            // 1. Inicializa o Mapa (Fundo Escuro para destacar as cores da chuva)
-            map = L.map('map', { zoomControl: false, attributionControl: false }).setView([0,0], 12);
-            L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png').addTo(map);
+            if(!user) user = L.circleMarker([lat, lon], {color:'blue', radius:10}).addTo(map);
+            else user.setLatLng([lat, lon]);
 
-            // 2. Camada de RADAR EM TEMPO REAL (RainViewer)
-            // As cores (Verde, Amarelo, Vermelho) aparecem aqui
-            L.tileLayer('https://tilecache.rainviewer.com/v2/radar/nowcast_5/256/{z}/{x}/{y}/2/1_1.png', {
-                opacity: 0.7,
-                zIndex: 100
-            }).addTo(map);
+            document.getElementById('spd').innerText = Math.round((p.coords.speed || 0) * 3.6);
+            
+            // Busca Postos e Clima
+            fetchClima(lat, lon);
+            fetchPostos(lat, lon);
+        }, (err) => alert("GPS DESATIVADO!"), {enableHighAccuracy: true});
+    }
 
-            startTracking();
-            startSensors();
-        }
+    async function fetchClima(lat, lon) {
+        try {
+            const r = await fetch(`https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=${KEY}&lang=pt_br`);
+            const d = await r.json();
+            document.getElementById('wea').innerText = d.weather[0].main;
+        } catch(e) {}
+    }
 
-        function startTracking() {
-            navigator.geolocation.watchPosition(pos => {
-                const lat = pos.coords.latitude;
-                const lon = pos.coords.longitude;
-                const speed = Math.round((pos.coords.speed || 0) * 3.6);
-                
-                map.setView([lat, lon]);
-                
-                if(!userMarker) {
-                    userMarker = L.circleMarker([lat, lon], {color: '#00ff00', radius: 8, fillOpacity: 1}).addTo(map);
-                } else {
-                    userMarker.setLatLng([lat, lon]);
-                }
-
-                document.getElementById('spd').innerText = speed;
-                document.getElementById('alt').innerText = Math.round(pos.coords.altitude || 0) + "m";
-
-                if (Date.now() - lastCheck > 120000) { // Atualiza clima e postos a cada 2 min
-                    checkWeather(lat, lon);
-                    fetchStations(lat, lon);
-                    lastCheck = Date.now();
-                }
-            }, null, { enableHighAccuracy: true });
-        }
-
-        async function checkWeather(lat, lon) {
-            try {
-                const res = await fetch(`https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=${API_KEY}&units=metric&lang=pt_br`);
-                const data = await res.json();
-                const condition = data.weather[0].main;
-                
-                document.getElementById('wea').innerText = data.weather[0].description;
-
-                if(["Rain", "Thunderstorm", "Drizzle"].includes(condition)) {
-                    document.getElementById('wea').style.color = "red";
-                    // Alerta Flash e Beep
-                    const flash = document.getElementById('flash');
-                    flash.style.opacity = "0.6";
-                    setTimeout(() => flash.style.opacity = "0", 300);
-                    
-                    if(audioCtx) {
-                        const osc = audioCtx.createOscillator();
-                        osc.connect(audioCtx.destination);
-                        osc.start(); osc.stop(audioCtx.currentTime + 0.15);
-                    }
-                } else {
-                    document.getElementById('wea').style.color = "#00ff00";
-                }
-            } catch(e) {}
-        }
-
-        async function fetchStations(lat, lon) {
-            const query = `[out:json];node["amenity"="fuel"](around:30000,${lat},${lon});out 5;`;
-            try {
-                const res = await fetch('https://overpass-api.de/api/interpreter?data=' + encodeURIComponent(query));
-                const data = await res.json();
-                let html = "";
-                data.elements.forEach(e => {
-                    html += `<div class="st-item"><b>⛽ ${e.tags.name || 'Posto'}</b>Posto Seguro 24h</div>`;
-                });
-                document.getElementById('list').innerHTML = html || "Buscando postos...";
-            } catch(e) {}
-        }
-
-        function startSensors() {
-            window.addEventListener('deviceorientation', e => {
-                let p = Math.round(e.beta); 
-                let r = Math.round(e.gamma);
-                document.getElementById('pit').innerText = p + "°";
-                document.getElementById('sky').style.transform = `rotate(${-r}deg) translateY(${p}px)`;
+    async function fetchPostos(lat, lon) {
+        // Busca num raio de 20km
+        const q = `[out:json];node["amenity"="fuel"](around:20000,${lat},${lon});out 5;`;
+        try {
+            const r = await fetch('https://overpass-api.de/api/interpreter?data=' + encodeURIComponent(q));
+            const d = await r.json();
+            let h = "";
+            d.elements.forEach(e => {
+                h += `<div>📍 ${e.tags.name || 'Posto'}</div>`;
             });
+            document.getElementById('list').innerHTML = h || "Nenhum posto por perto";
+        } catch(e) {
+            document.getElementById('list').innerText = "Erro ao buscar postos";
         }
-    </script>
+    }
+</script>
 </body>
 </html>
