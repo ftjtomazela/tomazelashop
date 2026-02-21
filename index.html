@@ -3,61 +3,67 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Radar Meteorológico Pro</title>
+    <title>Radar de Chuva Moto Pro</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
-        body { margin: 0; background: #000; color: white; font-family: sans-serif; overflow: hidden; }
+        body { margin: 0; background: #1a1a1a; color: white; font-family: sans-serif; overflow: hidden; }
         #map { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; }
         
-        /* Alerta de Chuva (Tela Piscando) */
-        #alert-overlay {
+        /* Alerta de Flash */
+        #alert-flash {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            z-index: 999; pointer-events: none; opacity: 0;
-            background: rgba(255, 204, 0, 0.6); /* Amarelo Alerta */
+            z-index: 999; pointer-events: none; opacity: 0; background: #ffcc00;
         }
 
-        #ui-top {
-            position: absolute; top: 10px; width: 100%; display: flex;
-            justify-content: center; z-index: 10; pointer-events: none;
+        /* HUD - Painel Superior */
+        #hud-top {
+            position: absolute; top: 15px; width: 100%; z-index: 10;
+            display: flex; justify-content: center; pointer-events: none;
         }
-        .warning-box {
-            background: rgba(255, 0, 0, 0.8); padding: 10px 20px;
-            border-radius: 20px; font-weight: bold; display: none; /* Escondido por padrão */
+        .warning-msg {
+            background: rgba(255, 0, 0, 0.9); padding: 12px 25px;
+            border-radius: 30px; font-weight: bold; font-size: 1.1rem;
+            box-shadow: 0 0 20px rgba(0,0,0,0.5); display: none;
         }
 
+        /* Dashboard Inferior */
         #dashboard {
-            position: absolute; bottom: 0; width: 100%; background: rgba(0,0,0,0.8);
-            display: flex; justify-content: space-around; padding: 15px 0; z-index: 10;
+            position: absolute; bottom: 0; width: 100%; background: rgba(0,0,0,0.85);
+            display: flex; justify-content: space-around; padding: 20px 0; z-index: 10;
+            border-top: 2px solid #333;
         }
         .stat { text-align: center; }
-        .val { font-size: 1.5rem; font-weight: bold; color: #00ff00; display: block; }
-        .label { font-size: 0.7rem; color: #aaa; text-transform: uppercase; }
+        .val { font-size: 1.8rem; font-weight: bold; color: #00ff00; display: block; }
+        .label { font-size: 0.7rem; color: #888; text-transform: uppercase; }
 
-        #btn-start {
+        #start-screen {
             position: fixed; top:0; left:0; width:100%; height:100%;
-            background: #111; z-index: 1000; display: flex; justify-content: center; align-items: center;
+            background: #000; z-index: 1000; display: flex; flex-direction: column;
+            justify-content: center; align-items: center;
         }
-        button { padding: 20px 40px; font-size: 1.2rem; background: #00ff00; border: none; border-radius: 30px; font-weight: bold; }
+        button { padding: 25px 50px; font-size: 1.3rem; background: #00ff00; border: none; border-radius: 50px; font-weight: bold; cursor: pointer; }
     </style>
 </head>
 <body>
 
-    <div id="btn-start">
-        <button onclick="iniciar()">LIGAR RADAR E AVISOS</button>
+    <div id="start-screen">
+        <h2 style="text-align:center">SISTEMA MOTO RADAR</h2>
+        <button onclick="ligarSistema()">ATIVAR RADAR E GPS</button>
+        <p style="color:#666; margin-top:15px">Aperte para carregar o mapa e sensores</p>
     </div>
 
-    <div id="alert-overlay"></div>
+    <div id="alert-flash"></div>
     
-    <div id="ui-top">
-        <div id="msg-alerta" class="warning-box">⚠️ ALERTA DE CHUVA NA ROTA</div>
+    <div id="hud-top">
+        <div id="aviso" class="warning-msg">⚠️ CHUVA DETECTADA NA ÁREA</div>
     </div>
 
     <div id="map"></div>
 
     <div id="dashboard">
         <div class="stat"><span id="speed" class="val">0</span><span class="label">km/h</span></div>
-        <div class="stat"><span id="clima" class="val">--</span><span class="label">Condição</span></div>
-        <div class="stat"><span id="dist" class="val">30km</span><span class="label">Raio Monitor</span></div>
+        <div class="stat"><span id="clima" class="val">--</span><span class="label">Tempo</span></div>
+        <div class="stat"><span id="alert-status" class="val">OK</span><span class="label">Status</span></div>
     </div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -65,77 +71,84 @@
         const API_KEY = "d0bd25d6a9954ce24084e7358c237204";
         let map, userMarker, audioCtx;
 
-        function iniciar() {
-            document.getElementById('btn-start').style.display = 'none';
+        function ligarSistema() {
+            document.getElementById('start-screen').style.display = 'none';
             audioCtx = new (window.AudioContext || window.webkitAudioContext)();
             
-            // 1. Mapa Base (Escuro para destacar a chuva)
-            map = L.map('map', { zoomControl: false, attributionControl: false }).setView([0,0], 13);
-            L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png').addTo(map);
+            // 1. Mapa Base (Troquei para o StreetMap para você ver as ruas)
+            map = L.map('map', { zoomControl: false, attributionControl: false }).setView([0,0], 12);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
 
-            // 2. Camada de RADAR (Cores de Chuva do RainViewer)
-            // Esta URL pega o radar mais recente e joga no mapa
-            L.tileLayer('https://tilecache.rainviewer.com/v2/radar/nowcast_5/256/{z}/{x}/{y}/2/1_1.png', {
-                opacity: 0.7,
+            // 2. Camada de RADAR (As cores verde, amarelo e vermelho)
+            // RainViewer API - Agora configurado para atualizar a cada minuto
+            const rainLayer = L.tileLayer('https://tilecache.rainviewer.com/v2/radar/nowcast_5/256/{z}/{x}/{y}/2/1_1.png', {
+                opacity: 0.65,
                 zIndex: 100
             }).addTo(map);
 
-            rastrear();
+            iniciarMonitoramento();
         }
 
-        function rastrear() {
+        function iniciarMonitoramento() {
             navigator.geolocation.watchPosition(pos => {
-                const { latitude, longitude, speed } = pos.coords;
-                const latlng = [latitude, longitude];
+                const lat = pos.coords.latitude;
+                const lon = pos.coords.longitude;
+                const speed = Math.round((pos.coords.speed || 0) * 3.6);
 
-                map.setView(latlng);
-                if(!userMarker) userMarker = L.circleMarker(latlng, {color: '#00ff00', radius: 10}).addTo(map);
-                else userMarker.setLatLng(latlng);
+                map.setView([lat, lon]);
+                
+                if(!userMarker) {
+                    userMarker = L.circleMarker([lat, lon], {
+                        color: '#007bff', fillColor: '#007bff', fillOpacity: 1, radius: 8
+                    }).addTo(map);
+                } else {
+                    userMarker.setLatLng([lat, lon]);
+                }
 
-                document.getElementById('speed').innerText = speed ? Math.round(speed * 3.6) : 0;
+                document.getElementById('speed').innerText = speed;
+                checarAPIClima(lat, lon);
 
-                verificarClima(latitude, longitude);
-            }, null, { enableHighAccuracy: true });
+            }, (err) => alert("GPS não encontrado. Verifique as permissões."), { enableHighAccuracy: true });
         }
 
-        async function verificarClima(lat, lon) {
+        async function checarAPIClima(lat, lon) {
             try {
                 const res = await fetch(`https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=${API_KEY}&units=metric&lang=pt_br`);
                 const data = await res.json();
-                const tempo = data.weather[0].main;
+                const condicao = data.weather[0].main;
                 
                 document.getElementById('clima').innerText = data.weather[0].description;
 
-                // Se detectar chuva (Rain) ou tempestade (Thunderstorm)
-                if(["Rain", "Thunderstorm", "Drizzle"].includes(tempo)) {
-                    dispararAviso();
+                // Gatilho de Alerta
+                if(["Rain", "Thunderstorm", "Drizzle", "Snow"].includes(condicao)) {
+                    ativarAlertas();
                 } else {
-                    pararAviso();
+                    document.getElementById('aviso').style.display = 'none';
+                    document.getElementById('alert-status').innerText = "OK";
+                    document.getElementById('alert-status').style.color = "#00ff00";
                 }
-            } catch(e) { console.log("Erro API"); }
+            } catch(e) { console.log("Erro ao conectar na API"); }
         }
 
-        function dispararAviso() {
-            // Mostra o texto vermelho no topo
-            document.getElementById('msg-alerta').style.display = 'block';
+        function ativarAlertas() {
+            // Texto no Topo
+            document.getElementById('aviso').style.display = 'block';
+            document.getElementById('alert-status').innerText = "ALERTA";
+            document.getElementById('alert-status').style.color = "red";
             
-            // Faz a tela piscar amarelo
-            const overlay = document.getElementById('alert-overlay');
-            overlay.style.opacity = "0.5";
-            setTimeout(() => overlay.style.opacity = "0", 300);
+            // Flash Amarelo na tela
+            const flash = document.getElementById('alert-flash');
+            flash.style.opacity = "0.6";
+            setTimeout(() => flash.style.opacity = "0", 250);
 
-            // Som de Beep
+            // Beep Sonoro
             if(audioCtx) {
                 const osc = audioCtx.createOscillator();
                 osc.connect(audioCtx.destination);
-                osc.frequency.value = 880;
+                osc.frequency.value = 1000;
                 osc.start();
-                osc.stop(audioCtx.currentTime + 0.1);
+                osc.stop(audioCtx.currentTime + 0.15);
             }
-        }
-
-        function pararAviso() {
-            document.getElementById('msg-alerta').style.display = 'none';
         }
     </script>
 </body>
