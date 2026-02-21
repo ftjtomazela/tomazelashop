@@ -3,175 +3,235 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>MotoHorizon - Painel Digital</title>
+    <title>Moto Horizon Pro - Expedition</title>
+    
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    
     <style>
-        body {
-            margin: 0;
-            background: #111;
-            color: white;
-            font-family: 'Arial', sans-serif;
-            overflow: hidden;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            height: 100vh;
+        :root { --danger: #ff0000; --warning: #ffcc00; --accent: #00ff00; }
+        
+        body { margin: 0; background: #000; color: white; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; overflow: hidden; }
+
+        /* Mapa de Radar ao Fundo */
+        #map { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; opacity: 0.5; filter: grayscale(30%); }
+
+        /* Overlay de Alerta Visual */
+        #alert-flash {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 999; pointer-events: none; opacity: 0;
+            background: var(--warning);
         }
 
-        /* Container do Horizonte Artificial */
-        #horizon-container {
-            position: relative;
-            width: 300px;
-            height: 300px;
-            border: 5px solid #444;
-            border-radius: 50%;
-            overflow: hidden;
-            background: #2c3e50; /* Cor do céu */
-        }
+        /* Interface UI */
+        #ui-layer { position: relative; z-index: 10; height: 100vh; display: flex; flex-direction: column; justify-content: space-between; pointer-events: none; }
+        .interactive { pointer-events: auto; }
 
+        /* Horizonte Artificial */
+        #horizon-box {
+            width: 130px; height: 130px; border-radius: 50%; border: 3px solid #666;
+            position: absolute; top: 20px; left: 20px; overflow: hidden; background: #2c3e50;
+            box-shadow: 0 0 15px rgba(0,0,0,0.5);
+        }
         #sky {
-            position: absolute;
-            width: 200%;
-            height: 200%;
+            position: absolute; width: 250%; height: 250%; top: -75%; left: -75%;
             background: linear-gradient(to bottom, #2980b9 50%, #8b4513 50%);
-            top: -50%;
-            left: -50%;
-            transition: transform 0.1s ease-out;
+            transition: transform 0.05s linear;
+        }
+        #horizon-fixed {
+            position: absolute; top: 50%; left: 15%; width: 70%; height: 2px;
+            background: var(--accent); z-index: 5; box-shadow: 0 0 5px #000;
         }
 
-        /* Marcação central fixa (A moto) */
-        #aircraft-indicator {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            width: 140px;
-            height: 4px;
-            background: #f1c40f;
-            z-index: 10;
+        /* Painel de Postos (Direita) */
+        #gas-info {
+            position: absolute; top: 20px; right: 20px; width: 180px;
+            background: rgba(0,0,0,0.8); border: 1px solid #444; border-radius: 8px;
+            padding: 10px; font-size: 11px;
         }
+        .station { border-bottom: 1px solid #333; padding: 5px 0; color: #ccc; }
+        .station b { color: var(--accent); display: block; }
 
-        #aircraft-indicator::before {
-            content: '';
-            position: absolute;
-            left: 50%;
-            top: -10px;
-            transform: translateX(-50%);
-            border-left: 10px solid transparent;
-            border-right: 10px solid transparent;
-            border-bottom: 10px solid #f1c40f;
+        /* Barra Inferior (Velocímetro e Clima) */
+        #dashboard {
+            background: linear-gradient(transparent, rgba(0,0,0,0.95));
+            padding: 20px; display: grid; grid-template-columns: 1fr 1fr 1fr 1fr;
+            text-align: center; border-top: 1px solid #222;
         }
+        .stat-val { font-size: 1.8rem; font-weight: bold; color: var(--accent); display: block; }
+        .stat-label { font-size: 0.65rem; color: #888; text-transform: uppercase; letter-spacing: 1px; }
 
-        /* Painel de Dados */
-        #data-panel {
-            margin-top: 20px;
-            text-align: center;
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 20px;
-            width: 90%;
+        /* Botão Inicial */
+        #starter {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: #111; z-index: 1000; display: flex; flex-direction: column;
+            justify-content: center; align-items: center; text-align: center;
         }
-
-        .data-box {
-            background: #222;
-            padding: 15px;
-            border-radius: 10px;
-            border: 1px solid #333;
-        }
-
-        .value { font-size: 2em; font-weight: bold; color: #00ff00; }
-        .label { font-size: 0.8em; color: #888; text-transform: uppercase; }
-
-        button {
-            padding: 15px 30px;
-            font-size: 1em;
-            background: #e74c3c;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            margin-bottom: 20px;
-            cursor: pointer;
+        #start-btn {
+            padding: 25px 50px; font-size: 1.2rem; background: var(--accent);
+            border: none; border-radius: 50px; font-weight: bold; cursor: pointer;
         }
     </style>
 </head>
 <body>
 
-    <button id="startBtn">ATIVAR SENSORES</button>
-
-    <div id="horizon-container">
-        <div id="sky"></div>
-        <div id="aircraft-indicator"></div>
+    <div id="starter">
+        <h1 style="color:white">MOTO EXPEDITION PRO</h1>
+        <p style="color:#666">Conecte o carregador e fixe no suporte</p><br>
+        <button id="start-btn" class="interactive">ATIVAR SISTEMA</button>
     </div>
 
-    <div id="data-panel">
-        <div class="data-box">
-            <div id="speed" class="value">0</div>
-            <div class="label">Velocidade (km/h)</div>
+    <div id="alert-flash"></div>
+    <div id="map"></div>
+
+    <div id="ui-layer">
+        <div id="horizon-box">
+            <div id="sky"></div>
+            <div id="horizon-fixed"></div>
         </div>
-        <div class="data-box">
-            <div id="altitude" class="value">---</div>
-            <div class="label">Altitude (m)</div>
+
+        <div id="gas-info">
+            <div style="margin-bottom:5px; border-bottom:1px solid #555">⛽ POSTOS 24H (30KM)</div>
+            <div id="station-list">Buscando sinal GPS...</div>
         </div>
-        <div class="data-box">
-            <div id="pitch" class="value">0°</div>
-            <div class="label">Inclinação (Subida/Descida)</div>
-        </div>
-        <div class="data-box">
-            <div id="roll" class="value">0°</div>
-            <div class="label">Curva (Graus)</div>
+
+        <div id="dashboard">
+            <div class="stat">
+                <span id="speed" class="stat-val">0</span>
+                <span class="stat-label">Velocidade km/h</span>
+            </div>
+            <div class="stat">
+                <span id="alt" class="stat-val">--</span>
+                <span class="stat-label">Altitude (m)</span>
+            </div>
+            <div class="stat">
+                <span id="clima-txt" class="stat-val">--</span>
+                <span class="stat-label">Tempo Atual</span>
+            </div>
+            <div class="stat">
+                <span id="pitch" class="stat-val">0°</span>
+                <span class="stat-label">Inclinação</span>
+            </div>
         </div>
     </div>
 
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
-        const sky = document.getElementById('sky');
-        const startBtn = document.getElementById('startBtn');
-        const speedEl = document.getElementById('speed');
-        const altitudeEl = document.getElementById('altitude');
-        const pitchEl = document.getElementById('pitch');
-        const rollEl = document.getElementById('roll');
+        const API_KEY = "f56cc4b31146f936bb204256f69fb6e1";
+        let map, userMarker, sky = document.getElementById('sky');
+        let audioCtx, lastWeatherCheck = 0;
 
-        // Solicitar permissão para iOS 13+ e sensores
-        startBtn.onclick = () => {
-            if (typeof DeviceOrientationEvent.requestPermission === 'function') {
-                DeviceOrientationEvent.requestPermission()
-                    .then(permissionState => {
-                        if (permissionState === 'granted') {
-                            window.addEventListener('deviceorientation', updateOrientation);
-                            startGPS();
-                            startBtn.style.display = 'none';
-                        }
-                    })
-                    .catch(console.error);
-            } else {
-                window.addEventListener('deviceorientation', updateOrientation);
-                startGPS();
-                startBtn.style.display = 'none';
-            }
+        document.getElementById('start-btn').onclick = function() {
+            document.getElementById('starter').style.display = 'none';
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            init();
         };
 
-        function updateOrientation(event) {
-            // Beta: Inclinação frente/trás (Pitch) | Gamma: Inclinação lateral (Roll)
-            let pitch = Math.round(event.beta); 
-            let roll = Math.round(event.gamma);
+        function init() {
+            // Inicializa Mapa focado no Brasil (será atualizado pelo GPS)
+            map = L.map('map', { zoomControl: false, attributionControl: false }).setView([-23.5, -46.6], 12);
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png').addTo(map);
 
-            pitchEl.innerText = pitch + "°";
-            rollEl.innerText = roll + "°";
+            // Camada de Radar (RainViewer - Atualizado a cada 10 min automaticamente)
+            L.tileLayer('https://tilecache.rainviewer.com/v2/radar/nowcast_5/256/{z}/{x}/{y}/2/1_1.png', {
+                opacity: 0.6, zIndex: 100
+            }).addTo(map);
 
-            // Move o "céu" de acordo com a moto
-            // Ajustamos o multiplicador para dar sensibilidade
-            sky.style.transform = `rotate(${-roll}deg) translateY(${pitch * 2}px)`;
+            startSensors();
+            startTracking();
         }
 
-        function startGPS() {
-            if ("geolocation" in navigator) {
-                navigator.geolocation.watchPosition((position) => {
-                    const speed = position.coords.speed ? Math.round(position.coords.speed * 3.6) : 0;
-                    const altitude = position.coords.altitude ? Math.round(position.coords.altitude) : "---";
+        function startTracking() {
+            navigator.geolocation.watchPosition(async (pos) => {
+                const lat = pos.coords.latitude;
+                const lon = pos.coords.longitude;
+                const speed = Math.round((pos.coords.speed || 0) * 3.6);
+                const altitude = Math.round(pos.coords.altitude || 0);
+
+                // Atualiza UI
+                document.getElementById('speed').innerText = speed;
+                document.getElementById('alt').innerText = altitude;
+                
+                const currentPos = [lat, lon];
+                map.setView(currentPos, 12);
+                
+                if(!userMarker) userMarker = L.circleMarker(currentPos, {color: '#00ff00', radius: 8}).addTo(map);
+                else userMarker.setLatLng(currentPos);
+
+                // Consulta Clima (OpenWeather) a cada 5 min
+                if (Date.now() - lastWeatherCheck > 300000) {
+                    checkWeather(lat, lon);
+                    fetchStations(lat, lon);
+                    lastWeatherCheck = Date.now();
+                }
+
+            }, (err) => console.error(err), { enableHighAccuracy: true });
+        }
+
+        async function checkWeather(lat, lon) {
+            try {
+                const res = await fetch(`https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=${API_KEY}&units=metric&lang=pt_br`);
+                const data = await res.json();
+                const main = data.weather[0].main;
+                const desc = data.weather[0].description;
+                
+                document.getElementById('clima-txt').innerText = main;
+
+                // Alerta se houver chuva (Rain), tempestade (Thunderstorm) ou neve/garoa
+                const perigo = ["Rain", "Thunderstorm", "Drizzle", "Snow"];
+                if(perigo.includes(main)) {
+                    triggerAlert();
+                    document.getElementById('clima-txt').style.color = "red";
+                } else {
+                    document.getElementById('clima-txt').style.color = "var(--accent)";
+                }
+            } catch(e) { console.log("Erro Clima"); }
+        }
+
+        async function fetchStations(lat, lon) {
+            const query = `[out:json];node["amenity"="fuel"](around:30000,${lat},${lon});out 5;`;
+            try {
+                const res = await fetch('https://overpass-api.de/api/interpreter?data=' + encodeURIComponent(query));
+                const data = await res.json();
+                let html = "";
+                data.elements.forEach(e => {
+                    html += `<div class="station"><b>⛽ ${e.tags.name || 'Posto S/N'}</b>30km raio / 24h</div>`;
+                });
+                document.getElementById('station-list').innerHTML = html || "Sem postos próximos";
+            } catch(e) { console.log("Erro Postos"); }
+        }
+
+        function triggerAlert() {
+            // Flash Amarelo na Tela
+            const flash = document.getElementById('alert-flash');
+            flash.style.opacity = "0.7";
+            setTimeout(() => flash.style.opacity = "0", 200);
+            
+            // Beep Sonoro
+            if(audioCtx) {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(880, audioCtx.currentTime); 
+                gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+                osc.start();
+                osc.stop(audioCtx.currentTime + 0.2);
+            }
+        }
+
+        function startSensors() {
+            if (window.DeviceOrientationEvent) {
+                window.addEventListener('deviceorientation', (e) => {
+                    let pitch = Math.round(e.beta); // Inclinação frente/trás
+                    let roll = Math.round(e.gamma); // Inclinação lateral
                     
-                    speedEl.innerText = speed;
-                    altitudeEl.innerText = altitude;
-                }, (err) => console.log(err), {
-                    enableHighAccuracy: true
+                    document.getElementById('pitch').innerText = pitch + "°";
+                    
+                    // Atualiza Visual do Horizonte
+                    // Limitamos o translateY para não sumir o céu
+                    let moveY = pitch * 1.5;
+                    sky.style.transform = `rotate(${-roll}deg) translateY(${moveY}px)`;
                 });
             }
         }
