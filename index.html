@@ -7,235 +7,88 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         body { margin: 0; background: #222; color: #fff; font-family: sans-serif; overflow: hidden; }
-        #map { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; background: #1a1a1a; }
+        #map { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; background: #eee; }
         #ui { position: relative; z-index: 10; height: 100vh; pointer-events: none; }
-        #horizon { width: 100px; height: 100px; border-radius: 50%; border: 3px solid #00ff00; position: absolute; top: 10px; left: 10px; overflow: hidden; background: #1a2a3a; box-shadow: 0 0 15px rgba(0,255,0,0.3); z-index: 20; }
-        #sky { position: absolute; width: 250%; height: 250%; top: -75%; left: -75%; background: linear-gradient(to bottom, #2980b9 50%, #2c3e50 50%); transition: transform 0.1s; }
-        #stations { position: absolute; top: 10px; right: 10px; width: 200px; background: rgba(0,0,0,0.85); padding: 12px; border-radius: 12px; font-size: 12px; pointer-events: auto; border: 1px solid #00ff00; box-shadow: 0 0 15px rgba(0,255,0,0.2); z-index: 20; }
-        #stations b { color: #00ff00; }
-        #dash { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); width: 90%; max-width: 400px; background: rgba(0,0,0,0.95); display: flex; justify-content: space-around; padding: 15px 0; border: 2px solid #00ff00; border-radius: 30px; box-shadow: 0 0 20px rgba(0,255,0,0.3); pointer-events: auto; backdrop-filter: blur(5px); z-index: 20; }
-        .v { font-size: 2rem; font-weight: bold; color: #00ff00; text-shadow: 0 0 10px rgba(0,255,0,0.5); }
-        #start { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 1000; display: flex; flex-direction: column; justify-content: center; align-items: center; pointer-events: auto; }
-        button { padding: 20px 40px; background: #00ff00; border: none; font-weight: bold; border-radius: 30px; font-size: 1.2rem; cursor: pointer; box-shadow: 0 0 30px #00ff00; transition: 0.3s; }
-        button:hover { transform: scale(1.1); box-shadow: 0 0 50px #00ff00; }
-        #start p { color: #00ff00; margin-top: 20px; }
-        #list { max-height: 150px; overflow-y: auto; margin-top: 8px; }
-        #list div { padding: 4px 0; border-bottom: 1px solid #333; color: #fff; }
-        .posto-marker { background: #00ff00; border: 2px solid #fff; border-radius: 50%; width: 12px; height: 12px; }
+        #horizon { width: 100px; height: 100px; border-radius: 50%; border: 2px solid #000; position: absolute; top: 10px; left: 10px; overflow: hidden; background: #1a2a3a; }
+        #sky { position: absolute; width: 250%; height: 250%; top: -75%; left: -75%; background: linear-gradient(to bottom, #2980b9 50%, #8b4513 50%); }
+        #stations { position: absolute; top: 10px; right: 10px; width: 180px; background: rgba(0,0,0,0.8); padding: 10px; border-radius: 10px; font-size: 11px; pointer-events: auto; }
+        #dash { position: absolute; bottom: 0; width: 100%; background: rgba(0,0,0,0.9); display: flex; justify-content: space-around; padding: 15px 0; border-top: 2px solid #00ff00; }
+        .v { font-size: 1.5rem; font-weight: bold; color: #00ff00; }
+        #start { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 1000; display: flex; justify-content: center; align-items: center; pointer-events: auto; }
+        button { padding: 20px; background: #00ff00; border: none; font-weight: bold; border-radius: 10px; }
     </style>
 </head>
 <body>
 
-<div id="start">
-    <button onclick="iniciar()">🔓 ATIVAR SISTEMA</button>
-    <p>GPS · Radar · Postos</p>
-</div>
+<div id="start"><button onclick="iniciar()">CLIQUE PARA ATIVAR TUDO</button></div>
 
 <div id="map"></div>
 
 <div id="ui">
     <div id="horizon"><div id="sky"></div></div>
-    <div id="stations"><b>⛽ POSTOS PRÓXIMOS</b><div id="list">📍 Buscando postos...</div></div>
+    <div id="stations"><b>⛽ PRÓXIMOS POSTOS:</b><div id="list">Buscando postos...</div></div>
     <div id="dash">
         <div><span id="spd" class="v">0</span><br>KM/H</div>
-        <div><span id="wea" class="v">--</span><br>CLIMA</div>
-        <div><span id="radar-status" class="v">⚡</span><br>RADAR</div>
+        <div><span id="wea" class="v">--</span><br>TEMPO</div>
     </div>
 </div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
     const KEY = "d0bd25d6a9954ce24084e7358c237204";
-    let map, user, radarLayer, postoMarkers = [];
-    let heading = 0;
-    let animationFrame;
+    let map, user;
 
     function iniciar() {
         document.getElementById('start').style.display = 'none';
         
-        // Inicializar mapa
-        map = L.map('map', { 
-            zoomControl: true,
-            attributionControl: false
-        }).setView([-23.5505, -46.6333], 13);
+        // Mapa base padrão (Não fica preto)
+        map = L.map('map', { zoomControl: false }).setView([0,0], 13);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
         
-        // Camada base escura para melhor visualização do radar
-        L.tileLayer('https://cartodb-basemaps-{s}.global.ssl.fastly.net/dark_all/{z}/{x}/{y}.png', {
-            attribution: '&copy; OpenStreetMap'
+        // Camada de Radar (Cores de chuva)
+        L.tileLayer('https://tilecache.rainviewer.com/v2/radar/nowcast_5/256/{z}/{x}/{y}/2/1_1.png', {
+            opacity: 0.6, zIndex: 100
         }).addTo(map);
-        
-        // CAMADA DE RADAR FIXA (RainViewer)
-        function updateRadar() {
-            fetch('https://api.rainviewer.com/public/weather-maps.json')
-                .then(response => response.json())
-                .then(data => {
-                    if (radarLayer) map.removeLayer(radarLayer);
-                    
-                    // Usar a última disponível
-                    const radar = data.radar.past[data.radar.past.length - 1];
-                    if (radar) {
-                        radarLayer = L.tileLayer(`https://tilecache.rainviewer.com${radar.path}/256/{z}/{x}/{y}/2/1_1.png`, {
-                            opacity: 0.7,
-                            zIndex: 500
-                        }).addTo(map);
-                        document.getElementById('radar-status').innerHTML = '🌧️';
-                    }
-                })
-                .catch(err => {
-                    console.log('Erro radar:', err);
-                    document.getElementById('radar-status').innerHTML = '⚠️';
-                });
-        }
-        
-        updateRadar();
-        setInterval(updateRadar, 10 * 60 * 1000); // Atualizar a cada 10 minutos
 
-        // GPS tracking
         navigator.geolocation.watchPosition(p => {
             const lat = p.coords.latitude;
             const lon = p.coords.longitude;
+            map.setView([lat, lon]);
             
-            map.setView([lat, lon], 15);
-            
-            if(!user) {
-                user = L.circleMarker([lat, lon], {
-                    color: '#00ff00',
-                    radius: 10,
-                    fillColor: '#00ff00',
-                    fillOpacity: 0.8,
-                    weight: 2
-                }).addTo(map);
-            } else {
-                user.setLatLng([lat, lon]);
-            }
+            if(!user) user = L.circleMarker([lat, lon], {color:'blue', radius:10}).addTo(map);
+            else user.setLatLng([lat, lon]);
 
-            // Velocidade
-            const speed = p.coords.speed ? Math.round(p.coords.speed * 3.6) : 0;
-            document.getElementById('spd').innerText = speed;
+            document.getElementById('spd').innerText = Math.round((p.coords.speed || 0) * 3.6);
             
-            // Direção para horizonte artificial
-            if (p.coords.heading !== null) {
-                heading = p.coords.heading;
-                document.getElementById('sky').style.transform = `rotate(${heading}deg)`;
-            }
-            
-            // Buscar dados
+            // Busca Postos e Clima
             fetchClima(lat, lon);
             fetchPostos(lat, lon);
-            
-        }, (err) => {
-            alert('ATENÇÃO: Ative o GPS para melhor experiência!');
-            document.getElementById('start').style.display = 'flex';
-        }, {
-            enableHighAccuracy: true,
-            maximumAge: 0,
-            timeout: 5000
-        });
+        }, (err) => alert("GPS DESATIVADO!"), {enableHighAccuracy: true});
     }
 
     async function fetchClima(lat, lon) {
         try {
-            const r = await fetch(`https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=${KEY}&lang=pt_br&units=metric`);
+            const r = await fetch(`https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=${KEY}&lang=pt_br`);
             const d = await r.json();
-            
-            if (d.weather && d.weather[0]) {
-                const cond = d.weather[0].main;
-                document.getElementById('wea').innerText = cond;
-                
-                // Mudar cor do horizonte baseado no clima
-                if (cond.includes('Rain')) {
-                    document.getElementById('sky').style.background = 'linear-gradient(to bottom, #2c3e50 50%, #34495e 50%)';
-                } else if (cond.includes('Cloud')) {
-                    document.getElementById('sky').style.background = 'linear-gradient(to bottom, #7f8c8d 50%, #95a5a6 50%)';
-                } else if (cond.includes('Clear')) {
-                    document.getElementById('sky').style.background = 'linear-gradient(to bottom, #3498db 50%, #f39c12 50%)';
-                }
-            }
-        } catch(e) {
-            console.log('Erro clima:', e);
-        }
+            document.getElementById('wea').innerText = d.weather[0].main;
+        } catch(e) {}
     }
 
     async function fetchPostos(lat, lon) {
-        // Overpass API - buscar postos num raio de 10km
-        const query = `[out:json];
-        (
-          node["amenity"="fuel"](around:10000,${lat},${lon});
-          way["amenity"="fuel"](around:10000,${lat},${lon});
-          relation["amenity"="fuel"](around:10000,${lat},${lon});
-        );
-        out center 20;`;
-        
+        // Busca num raio de 20km
+        const q = `[out:json];node["amenity"="fuel"](around:20000,${lat},${lon});out 5;`;
         try {
-            const r = await fetch('https://overpass-api.de/api/interpreter', {
-                method: 'POST',
-                body: 'data=' + encodeURIComponent(query)
-            });
-            
+            const r = await fetch('https://overpass-api.de/api/interpreter?data=' + encodeURIComponent(q));
             const d = await r.json();
-            
-            // Remover marcadores antigos
-            if (postoMarkers.length > 0) {
-                postoMarkers.forEach(m => map.removeLayer(m));
-                postoMarkers = [];
-            }
-            
-            let html = "";
-            
-            if (d.elements && d.elements.length > 0) {
-                d.elements.forEach((e, i) => {
-                    const postoLon = e.lon || (e.center && e.center.lon);
-                    const postoLat = e.lat || (e.center && e.center.lat);
-                    
-                    if (postoLon && postoLat) {
-                        const nome = e.tags && e.tags.name ? e.tags.name : 'Posto de Combustível';
-                        const marca = e.tags && e.tags.brand ? e.tags.brand : '';
-                        const displayNome = marca || nome;
-                        
-                        html += `<div>⛽ ${displayNome}</div>`;
-                        
-                        // Adicionar marcador no mapa
-                        const marker = L.circleMarker([postoLat, postoLon], {
-                            color: '#00ff00',
-                            radius: 8,
-                            fillColor: '#00ff00',
-                            fillOpacity: 0.8,
-                            weight: 2
-                        }).addTo(map);
-                        
-                        marker.bindPopup(`<b>⛽ ${displayNome}</b>`);
-                        postoMarkers.push(marker);
-                    }
-                });
-                
-                document.getElementById('list').innerHTML = html || "<div>⚠️ Nenhum posto encontrado</div>";
-            } else {
-                document.getElementById('list').innerHTML = "<div>⚠️ Nenhum posto num raio de 10km</div>";
-            }
-            
+            let h = "";
+            d.elements.forEach(e => {
+                h += `<div>📍 ${e.tags.name || 'Posto'}</div>`;
+            });
+            document.getElementById('list').innerHTML = h || "Nenhum posto por perto";
         } catch(e) {
-            console.log('Erro postos:', e);
-            document.getElementById('list').innerHTML = "<div>⚠️ Erro ao buscar postos</div>";
+            document.getElementById('list').innerText = "Erro ao buscar postos";
         }
     }
-
-    // Simular horizonte artificial com movimento do dispositivo (se disponível)
-    if (window.DeviceOrientationEvent) {
-        window.addEventListener('deviceorientation', function(event) {
-            if (event.alpha) {
-                heading = event.alpha;
-                document.getElementById('sky').style.transform = `rotate(${heading}deg)`;
-            }
-        });
-    }
-
-    // Fallback para horizonte com mouse (para testes em PC)
-    document.addEventListener('mousemove', function(e) {
-        if (!window.DeviceOrientationEvent) {
-            heading = (e.clientX / window.innerWidth) * 360;
-            document.getElementById('sky').style.transform = `rotate(${heading}deg)`;
-        }
-    });
 </script>
 </body>
 </html>
